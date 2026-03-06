@@ -1,0 +1,51 @@
+services:
+  postgres:
+    container_name: trombi_postgres
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/data/db-files/
+    environment:
+      POSTGRES_USER: trombi
+      POSTGRES_PASSWORD: trombi_secret
+      POSTGRES_DB: trombinoscope
+      PGDATA: /var/lib/postgresql/data/db-files/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trombi -d trombinoscope"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: trombi_backend
+    image: ${BACKEND_IMAGE:-ghcr.io/semiiih/trombinoscope/backend:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://trombi:trombi_secret@postgres:5432/trombinoscope
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
+      - exports_data:/app/exports
+    command: >
+      sh -c "npx prisma db push --accept-data-loss && node src/server.js"
+
+  frontend:
+    container_name: trombi_frontend
+    image: ${FRONTEND_IMAGE:-ghcr.io/semiiih/trombinoscope/frontend:latest}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  db-data:
+  uploads_data:
+  exports_data:

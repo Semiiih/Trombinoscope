@@ -1,0 +1,139 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/frontend
+
+jobs:
+  # ─── JOB 1 : TEST ────────────────────────────
+  # S'exécute sur chaque commit (push + PR)
+  # Si les tests échouent, le merge est bloqué
+  test:
+    name: Tests & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Backend : npm ci → prisma generate → tests ──
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test
+
+      # ── Frontend : pnpm install → lint → build (typecheck) ──
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js (frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: back-office/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: back-office
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint frontend
+        working-directory: back-office
+        run: pnpm lint
+
+      - name: Build frontend (TypeScript check + Vite build)
+        working-directory: back-office
+        run: pnpm build
+
+  # ─── JOB 2 : BUILD ───────────────────────────
+  # Construit les images Docker et les pousse sur GHCR
+  # Ne tourne que si les tests passent
+  build:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./back-office
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── JOB 3 : DEPLOY ──────────────────────────
+  # Déploie sur Render (Prod 1) après le build
+  # Uniquement sur merge/push vers main
+  deploy:
+    name: Deploy to Render (Prod 1)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy backend to Render
+        run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"
+
+      - name: Deploy frontend to Render
+        run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}"
+
+      - name: Deployment triggered
+        run: |
+          echo "Deployment triggered on Render!"
+          echo "Backend and frontend are being deployed..."
+          echo "Check https://dashboard.render.com for status."
