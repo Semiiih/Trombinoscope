@@ -7,7 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build
 dist
 dist-ssr
 *.local
@@ -22,6 +25,18 @@ backend/.env
 !.vscode/extensions.json
 .idea
 .DS_Store
+
+# Backend generated files
+backend/uploads/
+backend/exports/
+backend/.env
+
+# Misc
+.DS_Store
+.vite
+.idea
+.vscode/*
+!.vscode/extensions.json
 *.suo
 *.ntvs*
 *.njsproj
