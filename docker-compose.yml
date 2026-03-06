@@ -1,0 +1,78 @@
+services:
+  postgres:
+    container_name: trombi_postgres
+    image: postgres:16
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data/db-files/
+    environment:
+      POSTGRES_USER: trombi
+      POSTGRES_PASSWORD: trombi_secret
+      POSTGRES_DB: trombinoscope
+      PGDATA: /var/lib/postgresql/data/db-files/
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U trombi -d trombinoscope']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trombi_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://trombi:trombi_secret@postgres:5432/trombinoscope
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
+      - exports_data:/app/exports
+    command: >
+      sh -c "npx prisma db push --accept-data-loss && node src/server.js"
+
+  adminer:
+    container_name: trombi_adminer
+    image: michalhosna/adminer
+    restart: unless-stopped
+    ports:
+      - '8089:8080'
+    environment:
+      ADMINER_DRIVER: pgsql
+      ADMINER_SERVER: postgres
+      ADMINER_DB: trombinoscope
+      ADMINER_USERNAME: trombi
+      ADMINER_PASSWORD: trombi_secret
+      ADMINER_AUTOLOGIN: 1
+      ADMINER_NAME: Trombinoscope - local
+    depends_on:
+      - postgres
+
+  pgadmin:
+    container_name: trombi_pgadmin
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    ports:
+      - '5050:80'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@trombi.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin:/root/.pgadmin
+    depends_on:
+      - postgres
+
+volumes:
+  db-data:
+  uploads_data:
+  exports_data:
+  pgadmin:
