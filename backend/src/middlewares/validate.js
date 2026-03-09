@@ -29,14 +29,14 @@ function validateStudent(req, res, next) {
     return res.status(400).json({ error: 'Bad Request', message: '"email" must be a valid email address' });
   }
 
-  if (classId === undefined || isNaN(parseInt(classId, 10))) {
-    return res.status(400).json({ error: 'Bad Request', message: '"classId" must be a valid integer' });
+  if (classId !== null && classId !== undefined && classId !== '' && isNaN(parseInt(classId, 10))) {
+    return res.status(400).json({ error: 'Bad Request', message: '"classId" must be a valid integer or null' });
   }
 
   req.body.firstName = firstName.trim();
   req.body.lastName = lastName.trim();
   req.body.email = email.trim().toLowerCase();
-  req.body.classId = parseInt(classId, 10);
+  req.body.classId = (classId === null || classId === undefined || classId === '') ? null : parseInt(classId, 10);
   next();
 }
 

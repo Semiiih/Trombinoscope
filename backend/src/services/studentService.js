@@ -59,7 +59,7 @@ async function updateStudent(id, data) {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
-      classId: data.classId,
+      classId: data.classId ?? null,
     },
     include: { class: true },
   });
