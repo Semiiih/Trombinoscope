@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getClasses, downloadTrombi } from '../api/client';
 import type { Class } from '../types';
+import Select from '../components/Select';
 
 export default function Trombi() {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -29,8 +30,9 @@ export default function Trombi() {
       a.click();
       URL.revokeObjectURL(url);
       setSuccess(`Fichier "${filename}" téléchargé avec succès !`);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Erreur lors de la génération');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e?.response?.data?.message || 'Erreur lors de la génération');
     } finally {
       setLoading(false);
     }
@@ -47,17 +49,12 @@ export default function Trombi() {
         {/* Classe */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Classe</label>
-          <select
-            required
+          <Select
             value={classId}
-            onChange={e => setClassId(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          >
-            <option value="">Sélectionner une classe</option>
-            {classes.map(c => (
-              <option key={c.id} value={c.id}>{c.label} — {c.year} ({c._count?.students ?? 0} élève(s))</option>
-            ))}
-          </select>
+            onChange={setClassId}
+            placeholder="Sélectionner une classe"
+            options={classes.map(c => ({ value: String(c.id), label: `${c.label} — ${c.year} (${c._count?.students ?? 0} élève(s))` }))}
+          />
           {selectedClass && (
             <p className="text-xs text-gray-400 mt-1">{selectedClass._count?.students ?? 0} élève(s) dans cette classe</p>
           )}

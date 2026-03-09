@@ -12,7 +12,7 @@ export interface Student {
   lastName: string;
   email: string;
   photoUrl: string | null;
-  classId: number;
+  classId: number | null;
   createdAt: string;
   class?: { id: number; label: string; year: string };
 }
