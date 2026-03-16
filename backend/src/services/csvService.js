@@ -3,10 +3,15 @@ const prisma = require('../config/prisma');
 const { findOrCreateClass } = require('./classService');
 
 async function importStudents(buffer) {
+  const raw = buffer.toString('utf-8');
+  const delimiter = raw.indexOf(';') !== -1 ? ';' : ',';
+
   const records = parse(buffer, {
     columns: true,
     skip_empty_lines: true,
     trim: true,
+    delimiter,
+    bom: true,
   });
 
   let created = 0;
