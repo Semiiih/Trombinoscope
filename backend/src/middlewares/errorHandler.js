@@ -15,6 +15,10 @@ function errorHandler(err, req, res, next) {
     return res.status(409).json({ error: 'Conflict', message: 'A record with this value already exists' });
   }
 
+  if (err.code === 'P2003') {
+    return res.status(409).json({ error: 'Conflict', message: 'Cannot delete: related records exist' });
+  }
+
   if (err.type === 'entity.too.large' || err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: 'Payload Too Large', message: 'File size exceeds the allowed limit' });
   }
