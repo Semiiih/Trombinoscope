@@ -27,8 +27,8 @@ model Student {
   email     String   @unique
   photoUrl  String?
   createdAt DateTime @default(now())
-  class     Class    @relation(fields: [classId], references: [id])
-  classId   Int
+  class     Class?   @relation(fields: [classId], references: [id])
+  classId   Int?
 }
 
 model Export {

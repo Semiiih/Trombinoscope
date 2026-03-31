@@ -13,7 +13,7 @@ export const getStudents = (params?: { class_id?: number; q?: string }) =>
   api.get('/students', { params }).then(r => r.data);
 export const createStudent = (data: { firstName: string; lastName: string; email: string; classId: number }) =>
   api.post('/students', data).then(r => r.data);
-export const updateStudent = (id: number, data: { firstName: string; lastName: string; email: string; classId: number }) =>
+export const updateStudent = (id: number, data: { firstName: string; lastName: string; email: string; classId: number | null }) =>
   api.put(`/students/${id}`, data).then(r => r.data);
 export const deleteStudent = (id: number) => api.delete(`/students/${id}`);
 

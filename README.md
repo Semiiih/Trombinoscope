@@ -1,4 +1,4 @@
-# Trombinoscope v2
+# Trombinoscope 
 
 Application de gestion de trombinoscopes scolaires.
 Backend Node.js + Express + Prisma — Frontend React + Vite + Tailwind CSS.
@@ -156,6 +156,9 @@ npx prisma migrate dev --name nom_de_la_migration
 # 2. Rebuilder et relancer
 cd ..
 docker compose up -d --build
+
+# Re build uniquement le backend (plus rapide). L'autre commande rebuild tout (postgres, adminer, pgadmin)
+docker compose up --build backend -d
 ```
 
 > Les migrations sont stockées dans `backend/prisma/migrations/`

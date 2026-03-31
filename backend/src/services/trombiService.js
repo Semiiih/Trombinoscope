@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const prisma = require('../config/prisma');
-const { getExportDir, generateFilename } = require('../utils/fileHelper');
+const { getExportDir, getUploadDir, generateFilename } = require('../utils/fileHelper');
 
 async function generateTrombi(classId, format) {
   const cls = await prisma.class.findUnique({
@@ -48,11 +48,22 @@ async function generateTrombi(classId, format) {
 
 function generateHtml(cls, filePath) {
   const studentCards = cls.students.map((s) => {
-    const photo = s.photoUrl
-      ? `<img src="http://localhost:${process.env.PORT || 3000}${s.photoUrl}" alt="${s.firstName} ${s.lastName}" class="w-full h-full object-cover" />`
-      : `<div class="flex items-center justify-center h-full bg-gray-200 text-gray-400 text-4xl font-bold">
+    let photo;
+    if (s.photoUrl) {
+      const photoPath = path.join(getUploadDir(), path.basename(s.photoUrl));
+if (fs.existsSync(photoPath)) {
+        const ext = path.extname(photoPath).slice(1).toLowerCase();
+        const mime = ext === 'jpg' ? 'jpeg' : ext;
+        const base64 = fs.readFileSync(photoPath).toString('base64');
+        photo = `<img src="data:image/${mime};base64,${base64}" alt="${s.firstName} ${s.lastName}" class="w-full h-full object-cover" />`;
+      } else {
+        photo = `<div class="flex items-center justify-center h-full bg-gray-200 text-gray-400 text-4xl font-bold">${s.firstName[0]}${s.lastName[0]}</div>`;
+      }
+    } else {
+      photo = `<div class="flex items-center justify-center h-full bg-gray-200 text-gray-400 text-4xl font-bold">
           ${s.firstName[0]}${s.lastName[0]}
         </div>`;
+    }
 
     return `
       <div class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col items-center p-4 gap-3">
@@ -98,73 +109,95 @@ function generatePdf(cls, filePath) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
     const stream = fs.createWriteStream(filePath);
-
     doc.pipe(stream);
 
     // Title
     doc.fontSize(22).fillColor('#4338ca').text(`${cls.label} — ${cls.year}`, { align: 'center' });
     doc.fontSize(11).fillColor('#6b7280').text(`${cls.students.length} élève(s)`, { align: 'center' });
-    doc.moveDown(1.5);
+    doc.moveDown(1);
 
-    const COLS = 4;
-    const CARD_W = 120;
-    const CARD_H = 90;
-    const GAP_X = 10;
-    const GAP_Y = 15;
-    const START_X = 40;
-    let x = START_X;
+    const COLS       = 4;
+    const MARGIN     = 40;
+    const GAP_X      = 12;
+    const GAP_Y      = 14;
+    const CARD_W     = (doc.page.width - MARGIN * 2 - GAP_X * (COLS - 1)) / COLS; // ~118pt
+    const PHOTO_D    = 60;   // diameter of circular photo
+    const PAD_TOP    = 12;
+    const PAD_BOT    = 12;
+    const NAME_H     = 11;
+    const EMAIL_H    = 9;
+    const CARD_H     = PAD_TOP + PHOTO_D + 6 + NAME_H + 3 + EMAIL_H + PAD_BOT; // ~113pt
+
+    let x = MARGIN;
     let y = doc.y;
 
     cls.students.forEach((student, i) => {
-      // Check page overflow
-      if (y + CARD_H > doc.page.height - 60) {
+      if (y + CARD_H > doc.page.height - MARGIN) {
         doc.addPage();
-        y = 40;
-        x = START_X;
+        y = MARGIN;
+        x = MARGIN;
       }
 
       // Card background
-      doc.roundedRect(x, y, CARD_W, CARD_H, 6).fillAndStroke('#f9fafb', '#e5e7eb');
+      doc.roundedRect(x, y, CARD_W, CARD_H, 8).fillAndStroke('#ffffff', '#e5e7eb');
 
-      // Photo placeholder or initial
-      if (student.photoUrl) {
-        const photoPath = path.join(__dirname, '../../', student.photoUrl.replace('/uploads/', 'uploads/'));
-        if (fs.existsSync(photoPath)) {
-          doc.image(photoPath, x + 8, y + 8, { width: 40, height: 40 });
-        } else {
-          drawInitials(doc, student, x + 8, y + 8);
-        }
+      // Circular photo (centered in card)
+      const photoX = x + (CARD_W - PHOTO_D) / 2;
+      const photoY = y + PAD_TOP;
+      const cx = photoX + PHOTO_D / 2;
+      const cy = photoY + PHOTO_D / 2;
+      const r  = PHOTO_D / 2;
+
+      const photoPath = student.photoUrl
+        ? path.join(getUploadDir(), path.basename(student.photoUrl))
+        : null;
+
+      if (photoPath && fs.existsSync(photoPath)) {
+        // Clip to circle then draw image
+        doc.save();
+        doc.circle(cx, cy, r).clip();
+        doc.image(photoPath, photoX, photoY, { width: PHOTO_D, height: PHOTO_D });
+        doc.restore();
+        // Circle border
+        doc.circle(cx, cy, r).lineWidth(1.5).stroke('#a5b4fc');
       } else {
-        drawInitials(doc, student, x + 8, y + 8);
+        // Initials circle
+        doc.circle(cx, cy, r).fillAndStroke('#e0e7ff', '#a5b4fc');
+        const initials = `${student.firstName[0]}${student.lastName[0]}`.toUpperCase();
+        doc.fontSize(16).fillColor('#4338ca')
+          .text(initials, photoX, cy - 9, { width: PHOTO_D, align: 'center' });
       }
 
-      // Name
-      doc.fontSize(8).fillColor('#1f2937')
-        .text(`${student.firstName} ${student.lastName}`, x + 54, y + 12, { width: CARD_W - 58, ellipsis: true });
+      // Name (centered)
+      const textY = photoY + PHOTO_D + 6;
+      doc.fontSize(8).fillColor('#1f2937').font('Helvetica-Bold')
+        .text(`${student.firstName} ${student.lastName}`, x + 4, textY, { width: CARD_W - 8, align: 'center', ellipsis: true });
 
-      // Email
-      doc.fontSize(6.5).fillColor('#6b7280')
-        .text(student.email, x + 54, y + 28, { width: CARD_W - 58, ellipsis: true });
+      // Email (centered)
+      doc.fontSize(6.5).fillColor('#6b7280').font('Helvetica')
+        .text(student.email, x + 4, textY + NAME_H + 3, { width: CARD_W - 8, align: 'center', ellipsis: true });
 
-      // Next column / row
+      // Advance position
       if ((i + 1) % COLS === 0) {
-        x = START_X;
+        x = MARGIN;
         y += CARD_H + GAP_Y;
       } else {
         x += CARD_W + GAP_X;
       }
     });
 
+    // Footer
+    const footerY = doc.page.height - 30;
+    doc.fontSize(7).fillColor('#9ca3af')
+      .text(`Généré le ${new Date().toLocaleDateString('fr-FR')} — Trombinoscope v2`, MARGIN, footerY, {
+        width: doc.page.width - MARGIN * 2,
+        align: 'center',
+      });
+
     doc.end();
     stream.on('finish', resolve);
     stream.on('error', reject);
   });
-}
-
-function drawInitials(doc, student, x, y) {
-  doc.roundedRect(x, y, 40, 40, 20).fill('#c7d2fe');
-  const initials = `${student.firstName[0]}${student.lastName[0]}`.toUpperCase();
-  doc.fontSize(14).fillColor('#4338ca').text(initials, x, y + 11, { width: 40, align: 'center' });
 }
 
 function escapeHtml(str) {

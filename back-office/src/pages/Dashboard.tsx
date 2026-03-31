@@ -1,72 +1,63 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getClasses } from '../api/client';
-import type { Class } from '../types';
+import { useEffect, useState } from "react";
+import { getClasses } from "../api/client";
+import type { Class } from "../types";
+import StatCard from "../components/StatCard";
+import QuickLinkCard from "../components/QuickLinkCard";
+import Table from "../components/Table";
+
+const QUICK_LINKS = [
+  { to: "/classes", label: "Gérer les classes",  sub: "Classes & années",  iconBg: "bg-violet-100", iconColor: "text-violet-600", border: "hover:border-violet-300" },
+  { to: "/students", label: "Gérer les élèves",  sub: "Profils & photos",  iconBg: "bg-emerald-100", iconColor: "text-emerald-600", border: "hover:border-emerald-300" },
+  { to: "/import",  label: "Importer un CSV",    sub: "Import en masse",   iconBg: "bg-amber-100",  iconColor: "text-amber-600",  border: "hover:border-amber-300" },
+  { to: "/trombi",  label: "Générer un trombi",  sub: "HTML ou PDF",       iconBg: "bg-rose-100",   iconColor: "text-rose-500",   border: "hover:border-rose-300" },
+];
 
 export default function Dashboard() {
   const [classes, setClasses] = useState<Class[]>([]);
 
-  useEffect(() => {
-    getClasses().then(setClasses).catch(console.error);
-  }, []);
+  useEffect(() => { getClasses().then(setClasses).catch(console.error); }, []);
 
   const totalStudents = classes.reduce((s, c) => s + (c._count?.students ?? 0), 0);
 
   return (
-    <div className="p-8">
-      <h2 className="text-2xl font-bold text-gray-800 mb-1">Tableau de bord</h2>
-      <p className="text-gray-500 mb-8">Vue d'ensemble de l'application</p>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-        <StatCard label="Classes" value={classes.length} color="bg-indigo-50 text-indigo-700" />
-        <StatCard label="Élèves" value={totalStudents} color="bg-emerald-50 text-emerald-700" />
-        <StatCard label="Formats export" value="HTML & PDF" color="bg-amber-50 text-amber-700" />
+    <div className="min-h-screen bg-slate-50 p-8">
+      <div className="mb-10">
+        <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase mb-2">Tableau de bord</p>
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Vue d'ensemble</h1>
+        <p className="text-sm text-slate-400 mt-1">Gérez vos classes et élèves depuis un seul endroit.</p>
       </div>
 
-      {/* Quick links */}
-      <h3 className="font-semibold text-gray-700 mb-4">Accès rapide</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { to: '/classes', label: 'Gérer les classes', icon: '🎓' },
-          { to: '/students', label: 'Gérer les élèves', icon: '👤' },
-          { to: '/import', label: 'Importer un CSV', icon: '📂' },
-          { to: '/trombi', label: 'Générer un trombi', icon: '🖼️' },
-        ].map(({ to, label, icon }) => (
-          <Link
-            key={to}
-            to={to}
-            className="flex flex-col items-center gap-2 p-5 bg-white rounded-xl border border-gray-200 hover:border-indigo-400 hover:shadow-sm transition text-center"
-          >
-            <span className="text-3xl">{icon}</span>
-            <span className="text-sm font-medium text-gray-700">{label}</span>
-          </Link>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-12">
+        <StatCard label="Classes"        value={classes.length} accent="violet" />
+        <StatCard label="Élèves"         value={totalStudents}  accent="emerald" />
+        <StatCard label="Formats export" value="HTML & PDF"     accent="amber" />
       </div>
 
-      {/* Classes list */}
+      <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase mb-4">Accès rapide</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        {QUICK_LINKS.map((link) => <QuickLinkCard key={link.to} {...link} />)}
+      </div>
+
       {classes.length > 0 && (
-        <div className="mt-10">
-          <h3 className="font-semibold text-gray-700 mb-4">Classes enregistrées</h3>
-          <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-            {classes.map(cls => (
-              <div key={cls.id} className="flex items-center justify-between px-5 py-3">
-                <span className="font-medium">{cls.label} <span className="text-gray-400 font-normal">— {cls.year}</span></span>
-                <span className="text-sm text-gray-500">{cls._count?.students ?? 0} élève(s)</span>
-              </div>
-            ))}
+        <>
+          <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase mb-4">Classes enregistrées</p>
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <Table columns={["Classe", "Année", "Élèves"]} empty={{ icon: "🎓", message: "" }}>
+              {classes.map((cls) => (
+                <tr key={cls.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-slate-700">{cls.label}</td>
+                  <td className="px-6 py-4 text-slate-400">{cls.year}</td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="inline-block bg-violet-100 text-violet-600 text-xs font-semibold px-3 py-1 rounded-full">
+                      {cls._count?.students ?? 0} élève{(cls._count?.students ?? 0) !== 1 ? "s" : ""}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </Table>
           </div>
-        </div>
+        </>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, color }: { label: string; value: string | number; color: string }) {
-  return (
-    <div className={`rounded-xl p-6 ${color}`}>
-      <p className="text-3xl font-bold">{value}</p>
-      <p className="text-sm mt-1 opacity-80">{label}</p>
     </div>
   );
 }
