@@ -1,4 +1,4 @@
-# Trombinoscope v2
+# Trombinoscope 
 
 Application de gestion de trombinoscopes scolaires.
 Backend Node.js + Express + Prisma — Frontend React + Vite + Tailwind CSS.
