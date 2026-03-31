@@ -115,22 +115,24 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ─── JOB 3 : DEPLOY ──────────────────────────
-  # Déploie sur Render (Prod 1) après le build
-  # Uniquement sur merge/push vers main
-  deploy:
-    name: Deploy to Render (Prod 1)
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Deploy backend to Render
-        run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"
-
-      - name: Deploy frontend to Render
-        run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}"
-
-      - name: Deployment triggered
-        run: |
-          echo "Deployment triggered on Render!"
-          echo "Backend and frontend are being deployed..."
-          echo "Check https://dashboard.render.com for status."
+  # Décommente ce job quand tu auras un compte Render + les secrets configurés :
+  # - RENDER_DEPLOY_HOOK_BACKEND
+  # - RENDER_DEPLOY_HOOK_FRONTEND
+  #
+  # deploy:
+  #   name: Deploy to Render (Prod 1)
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #
+  #   steps:
+  #     - name: Deploy backend to Render
+  #       run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"
+  #
+  #     - name: Deploy frontend to Render
+  #       run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}"
+  #
+  #     - name: Deployment triggered
+  #       run: |
+  #         echo "Deployment triggered on Render!"
+  #         echo "Backend and frontend are being deployed..."
+  #         echo "Check https://dashboard.render.com for status."
