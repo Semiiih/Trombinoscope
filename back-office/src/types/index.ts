@@ -1,3 +1,9 @@
+export interface User {
+  id: number;
+  email: string;
+  role: "ADMIN" | "TEACHER";
+}
+
 export interface Class {
   id: number;
   label: string;

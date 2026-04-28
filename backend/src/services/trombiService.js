@@ -5,7 +5,7 @@ const prisma = require("../config/prisma");
 const { getExportDir, generateFilename } = require("../utils/fileHelper");
 const storage = require("./storageService");
 
-async function generateTrombi(classId, format) {
+async function generateTrombi(classId, format, userId = null) {
   const cls = await prisma.class.findUnique({
     where: { id: classId },
     include: {
@@ -41,7 +41,7 @@ async function generateTrombi(classId, format) {
 
   // Save export record
   await prisma.export.create({
-    data: { format, path: exportPath, classId },
+    data: { format, path: exportPath, classId, userId },
   });
 
   return { filePath, exportPath, cls };

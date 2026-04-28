@@ -14,7 +14,8 @@ async function generate(req, res, next) {
 
     const { filePath, exportPath, cls } = await trombiService.generateTrombi(
       parseInt(class_id, 10),
-      format
+      format,
+      req.user?.id ?? null
     );
 
     const contentType = format === 'pdf' ? 'application/pdf' : 'text/html';

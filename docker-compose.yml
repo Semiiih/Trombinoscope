@@ -65,6 +65,7 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://trombi:trombi_secret@postgres:5432/trombinoscope
       UPLOAD_DIR: /app/uploads
+      JWT_SECRET: dev_secret_change_in_prod
       STORAGE: s3
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET: trombi-uploads

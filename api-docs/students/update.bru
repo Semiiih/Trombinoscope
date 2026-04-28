@@ -1,0 +1,24 @@
+meta {
+  name: Update Student (admin)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/students/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "email": "jean.dupont@school.fr",
+    "classId": 1
+  }
+}
