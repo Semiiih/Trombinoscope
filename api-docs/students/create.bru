@@ -1,0 +1,24 @@
+meta {
+  name: Create Student (admin)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/students
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "email": "jean.dupont@school.fr",
+    "classId": 1
+  }
+}

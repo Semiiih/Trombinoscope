@@ -1,0 +1,22 @@
+meta {
+  name: Create Class (admin)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/classes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "label": "BTS SIO SLAM",
+    "year": "2025-2026"
+  }
+}

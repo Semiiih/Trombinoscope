@@ -1,0 +1,20 @@
+meta {
+  name: Get All Students
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/students
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+params:query {
+  ~class_id: 1
+  ~q: dupont
+}

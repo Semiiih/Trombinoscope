@@ -5,7 +5,7 @@ const prisma = require("../config/prisma");
 const { getExportDir, generateFilename } = require("../utils/fileHelper");
 const storage = require("./storageService");
 
-async function generateTrombi(classId, format) {
+async function generateTrombi(classId, format, userId = null) {
   const cls = await prisma.class.findUnique({
     where: { id: classId },
     include: {
@@ -41,7 +41,7 @@ async function generateTrombi(classId, format) {
 
   // Save export record
   await prisma.export.create({
-    data: { format, path: exportPath, classId },
+    data: { format, path: exportPath, classId, userId },
   });
 
   return { filePath, exportPath, cls };
@@ -102,8 +102,14 @@ async function generateHtml(cls, filePath) {
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
       ${studentCards}
     </div>
-    <footer class="text-center mt-12 text-xs text-gray-400">
-      Généré le ${new Date().toLocaleDateString("fr-FR")} — Trombinoscope v2
+    <footer class="text-center mt-12 text-xs text-gray-400 border-t border-gray-200 pt-4">
+      <p>Généré le ${new Date().toLocaleDateString("fr-FR")} — Trombinoscope v2</p>
+      <p class="mt-1 text-gray-300">
+        Les données personnelles présentes dans ce document (nom, prénom, photo) sont utilisées
+        dans le cadre pédagogique conformément au RGPD (Règlement UE 2016/679).
+        Toute reproduction ou diffusion à des fins autres qu'éducatives est interdite.
+        Droits d'accès, rectification et suppression : contacter l'établissement.
+      </p>
     </footer>
   </div>
 </body>
@@ -139,23 +145,26 @@ async function generatePdf(cls, filePath) {
       .text(`${cls.students.length} élève(s)`, { align: "center" });
     doc.moveDown(1);
 
-    const COLS = 4;
-    const MARGIN = 40;
-    const GAP_X = 12;
-    const GAP_Y = 14;
-    const CARD_W = (doc.page.width - MARGIN * 2 - GAP_X * (COLS - 1)) / COLS;
-    const PHOTO_D = 60;
-    const PAD_TOP = 12;
-    const PAD_BOT = 12;
-    const NAME_H = 11;
-    const EMAIL_H = 9;
-    const CARD_H = PAD_TOP + PHOTO_D + 6 + NAME_H + 3 + EMAIL_H + PAD_BOT;
+    const COLS     = 4;
+    const MARGIN   = 40;
+    const GAP_X    = 12;
+    const GAP_Y    = 14;
+    const CARD_W   = (doc.page.width - MARGIN * 2 - GAP_X * (COLS - 1)) / COLS;
+    const PHOTO_D  = 60;
+    const PAD_TOP  = 12;
+    const PAD_BOT  = 12;
+    const NAME_H   = 11;
+    const EMAIL_H  = 9;
+    const CARD_H   = PAD_TOP + PHOTO_D + 6 + NAME_H + 3 + EMAIL_H + PAD_BOT;
+    // Footer height: date line (10pt) + gap (6pt) + RGPD line (max 2 lines × 8pt = 16pt)
+    const FOOTER_H = 36;
+    const footerY  = doc.page.height - MARGIN - FOOTER_H;
 
     let x = MARGIN;
     let y = doc.y;
 
     cls.students.forEach((student, i) => {
-      if (y + CARD_H > doc.page.height - MARGIN) {
+      if (y + CARD_H > footerY - GAP_Y) {
         doc.addPage();
         y = MARGIN;
         x = MARGIN;
@@ -219,19 +228,27 @@ async function generatePdf(cls, filePath) {
       }
     });
 
-    const footerY = doc.page.height - 30;
+    const RGPD =
+      "Les données personnelles présentes dans ce document (nom, prénom, photo) sont utilisées " +
+      "dans le cadre pédagogique conformément au RGPD (Règlement UE 2016/679). " +
+      "Toute reproduction ou diffusion à des fins autres qu'éducatives est interdite. " +
+      "Droits d'accès, rectification et suppression : contacter l'établissement.";
+
     doc
       .fontSize(7)
-      .fillColor("#9ca3af")
+      .fillColor("#6b7280")
       .text(
         `Généré le ${new Date().toLocaleDateString("fr-FR")} — Trombinoscope v2`,
         MARGIN,
         footerY,
-        {
-          width: doc.page.width - MARGIN * 2,
-          align: "center",
-        },
-      );
+        { width: doc.page.width - MARGIN * 2, align: "center" },
+      )
+      .fontSize(5.5)
+      .fillColor("#9ca3af")
+      .text(RGPD, MARGIN, footerY + 14, {
+        width: doc.page.width - MARGIN * 2,
+        align: "center",
+      });
 
     doc.end();
     stream.on("finish", resolve);

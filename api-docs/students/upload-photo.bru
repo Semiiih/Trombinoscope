@@ -1,0 +1,19 @@
+meta {
+  name: Upload Photo (admin)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/students/1/photo
+  body: multipart-form
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipart-form {
+  photo: @file()
+}

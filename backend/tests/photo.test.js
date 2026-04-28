@@ -25,10 +25,7 @@ describe('Photo Upload (Integration)', () => {
   let filesBeforeTest = [];
 
   beforeAll(async () => {
-    // Create a real 400×400 JPEG to use as test fixture
-    if (!fs.existsSync(FIXTURES_DIR)) {
-      fs.mkdirSync(FIXTURES_DIR, { recursive: true });
-    }
+    if (!fs.existsSync(FIXTURES_DIR)) fs.mkdirSync(FIXTURES_DIR, { recursive: true });
     await sharp({
       create: { width: 400, height: 400, channels: 3, background: { r: 100, g: 150, b: 200 } },
     })
@@ -38,8 +35,7 @@ describe('Photo Upload (Integration)', () => {
 
   afterAll(() => {
     if (fs.existsSync(TEST_IMAGE_PATH)) fs.unlinkSync(TEST_IMAGE_PATH);
-    // Remove fixtures dir only if empty
-    try { fs.rmdirSync(FIXTURES_DIR); } catch (_) { /* not empty, leave it */ }
+    try { fs.rmdirSync(FIXTURES_DIR); } catch (_) { /* not empty */ }
   });
 
   beforeEach(() => {
@@ -49,13 +45,10 @@ describe('Photo Upload (Integration)', () => {
   });
 
   afterEach(() => {
-    // Clean up any files created in uploads/ during the test
     const uploadDir = getUploadDir();
     if (fs.existsSync(uploadDir)) {
       fs.readdirSync(uploadDir).forEach((f) => {
-        if (!filesBeforeTest.includes(f)) {
-          fs.unlinkSync(path.join(uploadDir, f));
-        }
+        if (!filesBeforeTest.includes(f)) fs.unlinkSync(path.join(uploadDir, f));
       });
     }
   });
@@ -73,29 +66,27 @@ describe('Photo Upload (Integration)', () => {
 
     const res = await request(app)
       .post('/api/students/1/photo')
+      .set('Authorization', global.adminAuth)
       .attach('photo', TEST_IMAGE_PATH);
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('photoUrl');
     expect(capturedPhotoUrl).toBeDefined();
 
-    // The thumbnail must exist on disk
     const thumbFilename = path.basename(capturedPhotoUrl);
     const thumbPath = path.join(getUploadDir(), thumbFilename);
     expect(fs.existsSync(thumbPath)).toBe(true);
 
-    // The thumbnail must be exactly 300×300
     const metadata = await sharp(thumbPath).metadata();
     expect(metadata.width).toBe(300);
     expect(metadata.height).toBe(300);
   });
 
   it('replaces old photo file when a new one is uploaded', async () => {
-    // Create a fake existing thumbnail in uploads/
     const uploadDir = getUploadDir();
     const oldThumb = path.join(uploadDir, 'thumb_old_photo.jpg');
     fs.writeFileSync(oldThumb, 'old photo data');
-    filesBeforeTest.push('thumb_old_photo.jpg'); // don't auto-delete it; we check it's gone
+    filesBeforeTest.push('thumb_old_photo.jpg');
 
     const studentWithPhoto = { ...mockStudent, photoUrl: '/uploads/thumb_old_photo.jpg' };
     prisma.student.findUnique.mockResolvedValue(studentWithPhoto);
@@ -105,10 +96,10 @@ describe('Photo Upload (Integration)', () => {
 
     const res = await request(app)
       .post('/api/students/1/photo')
+      .set('Authorization', global.adminAuth)
       .attach('photo', TEST_IMAGE_PATH);
 
     expect(res.status).toBe(200);
-    // Old thumbnail must have been deleted
     expect(fs.existsSync(oldThumb)).toBe(false);
   });
 
@@ -117,6 +108,7 @@ describe('Photo Upload (Integration)', () => {
   it('returns 400 when uploading a non-image file', async () => {
     const res = await request(app)
       .post('/api/students/1/photo')
+      .set('Authorization', global.adminAuth)
       .attach('photo', Buffer.from('not an image'), {
         filename: 'document.txt',
         contentType: 'text/plain',
@@ -126,7 +118,9 @@ describe('Photo Upload (Integration)', () => {
   });
 
   it('returns 400 when no file is provided', async () => {
-    const res = await request(app).post('/api/students/1/photo');
+    const res = await request(app)
+      .post('/api/students/1/photo')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(400);
   });
@@ -136,8 +130,19 @@ describe('Photo Upload (Integration)', () => {
 
     const res = await request(app)
       .post('/api/students/1/photo')
+      .set('Authorization', global.adminAuth)
       .attach('photo', TEST_IMAGE_PATH);
 
     expect(res.status).toBe(404);
+  });
+
+  it('returns 403 when teacher tries to upload a photo', async () => {
+    // Use a tiny buffer to avoid EPIPE when server rejects before multer reads the stream
+    const res = await request(app)
+      .post('/api/students/1/photo')
+      .set('Authorization', global.teacherAuth)
+      .attach('photo', Buffer.from('x'), { filename: 'x.jpg', contentType: 'image/jpeg' });
+
+    expect(res.status).toBe(403);
   });
 });
