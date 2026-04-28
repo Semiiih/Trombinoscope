@@ -1,0 +1,10 @@
+{
+  "name": "trombinoscope-v2",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "test:be": "npm --prefix backend run test:be",
+    "dev:bo": "npm --prefix back-office run dev",
+    "db": "open http://localhost:8089"
+  }
+}

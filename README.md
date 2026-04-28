@@ -1,4 +1,4 @@
-# Trombinoscope 
+# Trombinoscope
 
 Application de gestion de trombinoscopes scolaires.
 Backend Node.js + Express + Prisma — Frontend React + Vite + Tailwind CSS.
@@ -33,9 +33,8 @@ curl http://localhost:3000/health
 ### 2. Frontend (Back Office)
 
 ```bash
-cd back-office
-pnpm install   # uniquement la première fois
-pnpm dev
+# Depuis la racine du projet
+npm run dev:bo
 ```
 
 Ouvrir http://localhost:5173
@@ -44,14 +43,23 @@ Ouvrir http://localhost:5173
 
 ## URLs disponibles
 
-| Service     | URL                   | Description           |
-| ----------- | --------------------- | --------------------- |
-| Back Office | http://localhost:5173 | Interface React       |
-| API         | http://localhost:3000 | REST API              |
-| Adminer     | http://localhost:8089 | Interface BDD simple  |
-| pgAdmin     | http://localhost:5050 | Interface BDD avancée |
+| Service     | URL                   | Description     |
+| ----------- | --------------------- | --------------- |
+| Back Office | http://localhost:5173 | Interface React |
+| API         | http://localhost:3000 | REST API        |
+| Adminer     | http://localhost:8089 | Interface BDD   |
 
-**pgAdmin** — login : `admin@trombi.local` / `admin`
+---
+
+## Commandes racine
+
+Toutes ces commandes s'exécutent **depuis la racine du projet** :
+
+```bash
+npm run dev:bo        # Lancer le frontend (React + Vite)
+npm run test:be       # Lancer les tests backend
+npm run db            # Ouvrir Adminer (interface BDD) dans le navigateur
+```
 
 ---
 
@@ -124,7 +132,7 @@ SELECT * FROM "Student";
 \q                      -- quitter
 ```
 
-### Connexion GUI (Adminer, pgAdmin, TablePlus...)
+### Connexion GUI (Adminer, TablePlus...)
 
 ```
 Host:     localhost
@@ -157,7 +165,7 @@ npx prisma migrate dev --name nom_de_la_migration
 cd ..
 docker compose up -d --build
 
-# Re build uniquement le backend (plus rapide). L'autre commande rebuild tout (postgres, adminer, pgadmin)
+# Re build uniquement le backend (plus rapide)
 docker compose up --build backend -d
 ```
 
@@ -168,10 +176,17 @@ docker compose up --build backend -d
 
 ## Tests
 
+Depuis la racine :
+
 ```bash
-cd backend
-npm test                  # tous les tests
-npm run test:coverage     # avec rapport de couverture
+npm run test:be               # tous les tests backend
+```
+
+Ou depuis `backend/` :
+
+```bash
+npm test                      # tous les tests
+npm run test:coverage         # avec rapport de couverture
 ```
 
 Les tests utilisent des mocks Prisma — pas besoin de BDD active.
@@ -180,9 +195,10 @@ Suites disponibles :
 
 - `tests/health.test.js` — health check
 - `tests/class.test.js` — CRUD classes
-- `tests/student.test.js` — CRUD élèves
-- `tests/csv.test.js` — import CSV
-- `tests/trombi.test.js` — génération trombinoscope
+- `tests/student.test.js` — CRUD élèves + suppression photo
+- `tests/csv.test.js` — import CSV (happy path + erreurs + délimiteur `;`)
+- `tests/trombi.test.js` — génération HTML/PDF (fichier non vide vérifié)
+- `tests/photo.test.js` — upload photo + vignette 300×300 sur disque
 
 ---
 
@@ -195,6 +211,7 @@ first_name,last_name,email,class_label,year
 Alice,Dupont,alice@example.com,BTS SIO,2024-2025
 ```
 
+- Délimiteur `,` ou `;` acceptés
 - Si la classe n'existe pas → elle est créée automatiquement
 - Si l'email existe déjà → l'élève est mis à jour (upsert)
 
@@ -206,6 +223,7 @@ Alice,Dupont,alice@example.com,BTS SIO,2024-2025
 
 ```
 GET    /api/classes
+GET    /api/classes/:id
 POST   /api/classes        { label, year }
 PUT    /api/classes/:id    { label, year }
 DELETE /api/classes/:id
@@ -215,6 +233,7 @@ DELETE /api/classes/:id
 
 ```
 GET    /api/students?class_id=&q=
+GET    /api/students/:id
 POST   /api/students       { firstName, lastName, email, classId }
 PUT    /api/students/:id
 DELETE /api/students/:id
@@ -266,6 +285,7 @@ Trombinoscope-v2/
 │   ├── exports/                  Fichiers trombi générés (ignoré par git)
 │   └── Dockerfile
 ├── docker-compose.yml
+├── package.json                  Scripts racine (dev:bo, test:be, db)
 └── README.md
 ```
 

@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "NODE_ENV=test jest --runInBand --forceExit",
+    "test:be": "NODE_ENV=test jest --runInBand --forceExit",
     "test:coverage": "NODE_ENV=test jest --coverage --runInBand --forceExit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
