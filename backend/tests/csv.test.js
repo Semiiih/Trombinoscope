@@ -27,6 +27,7 @@ describe('CSV Import API', () => {
 
     const res = await request(app)
       .post('/api/students/import')
+      .set('Authorization', global.adminAuth)
       .attach('file', validCsv, { filename: 'students.csv', contentType: 'text/csv' });
 
     expect(res.status).toBe(207);
@@ -41,6 +42,7 @@ describe('CSV Import API', () => {
 
     const res = await request(app)
       .post('/api/students/import')
+      .set('Authorization', global.adminAuth)
       .attach('file', validCsv, { filename: 'students.csv', contentType: 'text/csv' });
 
     expect(res.status).toBe(207);
@@ -53,6 +55,7 @@ describe('CSV Import API', () => {
   it('handles rows with validation errors (missing first_name + bad email)', async () => {
     const res = await request(app)
       .post('/api/students/import')
+      .set('Authorization', global.adminAuth)
       .attach('file', invalidCsv, { filename: 'students.csv', contentType: 'text/csv' });
 
     expect(res.status).toBe(207);
@@ -63,8 +66,8 @@ describe('CSV Import API', () => {
   it('handles mixed CSV: some valid rows, some invalid rows', async () => {
     const mixedCsv = Buffer.from(
       'first_name,last_name,email,class_label,year\n' +
-      'Alice,Dupont,alice@test.com,BTS SIO,2024\n' +  // valid
-      ',Martin,not-an-email,BTS SIO,2024\n'           // invalid: missing first_name + bad email
+      'Alice,Dupont,alice@test.com,BTS SIO,2024\n' +
+      ',Martin,not-an-email,BTS SIO,2024\n'
     );
 
     prisma.class.findFirst.mockResolvedValue({ id: 1, label: 'BTS SIO', year: '2024' });
@@ -72,6 +75,7 @@ describe('CSV Import API', () => {
 
     const res = await request(app)
       .post('/api/students/import')
+      .set('Authorization', global.adminAuth)
       .attach('file', mixedCsv, { filename: 'students.csv', contentType: 'text/csv' });
 
     expect(res.status).toBe(207);
@@ -91,6 +95,7 @@ describe('CSV Import API', () => {
 
     const res = await request(app)
       .post('/api/students/import')
+      .set('Authorization', global.adminAuth)
       .attach('file', semicolonCsv, { filename: 'students.csv', contentType: 'text/csv' });
 
     expect(res.status).toBe(207);
@@ -106,6 +111,7 @@ describe('CSV Import API', () => {
 
     const res = await request(app)
       .post('/api/students/import')
+      .set('Authorization', global.adminAuth)
       .attach('file', badHeadersCsv, { filename: 'students.csv', contentType: 'text/csv' });
 
     expect(res.status).toBe(207);
@@ -113,7 +119,9 @@ describe('CSV Import API', () => {
   });
 
   it('returns 400 when no file is attached', async () => {
-    const res = await request(app).post('/api/students/import');
+    const res = await request(app)
+      .post('/api/students/import')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(400);
   });
@@ -121,8 +129,18 @@ describe('CSV Import API', () => {
   it('returns 400 when uploaded file is not a CSV', async () => {
     const res = await request(app)
       .post('/api/students/import')
+      .set('Authorization', global.adminAuth)
       .attach('file', Buffer.from('not a csv'), { filename: 'data.pdf', contentType: 'application/pdf' });
 
     expect(res.status).toBe(400);
+  });
+
+  it('returns 403 when teacher tries to import CSV', async () => {
+    const res = await request(app)
+      .post('/api/students/import')
+      .set('Authorization', global.teacherAuth)
+      .attach('file', validCsv, { filename: 'students.csv', contentType: 'text/csv' });
+
+    expect(res.status).toBe(403);
   });
 });

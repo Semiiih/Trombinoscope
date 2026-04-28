@@ -18,7 +18,6 @@ const mockClass = {
   ],
 };
 
-// Helper: list files in export dir before/after a request and clean up new ones
 function snapshotExportDir() {
   const dir = getExportDir();
   return fs.existsSync(dir) ? new Set(fs.readdirSync(dir)) : new Set();
@@ -38,19 +37,25 @@ describe('Trombi Generation API', () => {
   // ─── Validation ──────────────────────────────────────────────────────────────
 
   it('returns 400 when format is invalid', async () => {
-    const res = await request(app).get('/api/trombi?class_id=1&format=docx');
+    const res = await request(app)
+      .get('/api/trombi?class_id=1&format=docx')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when class_id is missing', async () => {
-    const res = await request(app).get('/api/trombi?format=html');
+    const res = await request(app)
+      .get('/api/trombi?format=html')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when format is missing', async () => {
-    const res = await request(app).get('/api/trombi?class_id=1');
+    const res = await request(app)
+      .get('/api/trombi?class_id=1')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(400);
   });
@@ -58,7 +63,9 @@ describe('Trombi Generation API', () => {
   it('returns 404 when class does not exist', async () => {
     prisma.class.findUnique.mockResolvedValue(null);
 
-    const res = await request(app).get('/api/trombi?class_id=999&format=html');
+    const res = await request(app)
+      .get('/api/trombi?class_id=999&format=html')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(404);
   });
@@ -70,7 +77,9 @@ describe('Trombi Generation API', () => {
     prisma.class.findUnique.mockResolvedValue(mockClass);
     prisma.export.create.mockResolvedValue({});
 
-    const res = await request(app).get('/api/trombi?class_id=1&format=html');
+    const res = await request(app)
+      .get('/api/trombi?class_id=1&format=html')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/html/);
@@ -83,7 +92,9 @@ describe('Trombi Generation API', () => {
     prisma.class.findUnique.mockResolvedValue(mockClass);
     prisma.export.create.mockResolvedValue({});
 
-    const res = await request(app).get('/api/trombi?class_id=1&format=html');
+    const res = await request(app)
+      .get('/api/trombi?class_id=1&format=html')
+      .set('Authorization', global.teacherAuth);
 
     expect(res.status).toBe(200);
     expect(res.text).toContain('BTS SIO');
@@ -100,7 +111,9 @@ describe('Trombi Generation API', () => {
     prisma.class.findUnique.mockResolvedValue(mockClass);
     prisma.export.create.mockResolvedValue({});
 
-    const res = await request(app).get('/api/trombi?class_id=1&format=html');
+    const res = await request(app)
+      .get('/api/trombi?class_id=1&format=html')
+      .set('Authorization', global.teacherAuth);
 
     expect(res.status).toBe(200);
     expect(res.text).toContain('footer');
@@ -113,7 +126,9 @@ describe('Trombi Generation API', () => {
     prisma.class.findUnique.mockResolvedValue(mockClass);
     prisma.export.create.mockResolvedValue({});
 
-    await request(app).get('/api/trombi?class_id=1&format=html');
+    await request(app)
+      .get('/api/trombi?class_id=1&format=html')
+      .set('Authorization', global.adminAuth);
 
     expect(prisma.export.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ format: 'html', classId: 1 }) })
@@ -129,7 +144,9 @@ describe('Trombi Generation API', () => {
     prisma.class.findUnique.mockResolvedValue(mockClass);
     prisma.export.create.mockResolvedValue({});
 
-    const res = await request(app).get('/api/trombi?class_id=1&format=pdf');
+    const res = await request(app)
+      .get('/api/trombi?class_id=1&format=pdf')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/pdf/);
@@ -142,22 +159,21 @@ describe('Trombi Generation API', () => {
     prisma.class.findUnique.mockResolvedValue(mockClass);
     prisma.export.create.mockResolvedValue({});
 
-    const res = await request(app).get('/api/trombi?class_id=1&format=pdf');
+    const res = await request(app)
+      .get('/api/trombi?class_id=1&format=pdf')
+      .set('Authorization', global.adminAuth);
 
     expect(res.status).toBe(200);
 
-    // Verify a real PDF file was written to the exports directory
     const exportDir = getExportDir();
     const after = fs.readdirSync(exportDir);
     const newPdfs = after.filter((f) => !before.has(f) && f.endsWith('.pdf'));
-
     expect(newPdfs).toHaveLength(1);
 
     const pdfPath = path.join(exportDir, newPdfs[0]);
     const stat = fs.statSync(pdfPath);
     expect(stat.size).toBeGreaterThan(0);
 
-    // Verify it starts with the PDF magic bytes
     const header = Buffer.alloc(4);
     const fd = fs.openSync(pdfPath, 'r');
     fs.readSync(fd, header, 0, 4, 0);
@@ -172,12 +188,27 @@ describe('Trombi Generation API', () => {
     prisma.class.findUnique.mockResolvedValue(mockClass);
     prisma.export.create.mockResolvedValue({});
 
-    await request(app).get('/api/trombi?class_id=1&format=pdf');
+    await request(app)
+      .get('/api/trombi?class_id=1&format=pdf')
+      .set('Authorization', global.adminAuth);
 
     expect(prisma.export.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ format: 'pdf', classId: 1 }) })
     );
 
+    cleanNewExportFiles(before);
+  });
+
+  it('teacher can also generate trombi', async () => {
+    const before = snapshotExportDir();
+    prisma.class.findUnique.mockResolvedValue(mockClass);
+    prisma.export.create.mockResolvedValue({});
+
+    const res = await request(app)
+      .get('/api/trombi?class_id=1&format=html')
+      .set('Authorization', global.teacherAuth);
+
+    expect(res.status).toBe(200);
     cleanNewExportFiles(before);
   });
 });
