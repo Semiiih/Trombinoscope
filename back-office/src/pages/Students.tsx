@@ -13,6 +13,9 @@ import Breadcrumb from "../components/Breadcrumb";
 import StudentsTable from "../components/StudentsTable";
 import StudentModal from "../components/StudentModal";
 import ConfirmDialog from "../components/ConfirmDialog";
+import CropModal from "../components/CropModal";
+import PhotoPreviewModal from "../components/PhotoPreviewModal";
+import { fileToDataUrl } from "../utils/fileToDataUrl";
 
 export default function Students() {
   const [searchParams] = useSearchParams();
@@ -26,8 +29,16 @@ export default function Students() {
   const [showModal, setShowModal] = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Student | null>(null);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [photoTarget, setPhotoTarget] = useState<Student | null>(null);
+
+  // Image originale sélectionnée — jamais écrasée entre les crops
+  const [cropSourceUrl, setCropSourceUrl] = useState<string | null>(null);
+  // URL de la vignette uploadée pour l'aperçu
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Affichage du crop modal
+  const [showCrop, setShowCrop] = useState(false);
 
   const load = useCallback(
     () =>
@@ -68,20 +79,70 @@ export default function Students() {
     }
   }
 
+  // ── 1. Sélection → data URL stable → upload auto ─────────────────────────
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!photoTarget || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+
+    // Convertir en data URL AVANT de vider l'input (évite invalidation du File)
+    const dataUrl = await fileToDataUrl(file);
+    setCropSourceUrl(dataUrl);
+
+    if (fileRef.current) fileRef.current.value = "";
     setUploadingId(photoTarget.id);
     try {
-      await uploadPhoto(photoTarget.id, e.target.files[0]);
+      const updated = await uploadPhoto(photoTarget.id, file);
       load();
+      setPreviewUrl(updated.photoUrl ?? null);
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
       alert(error?.response?.data?.message || "Erreur lors de l'upload");
+      setCropSourceUrl(null);
+      setPhotoTarget(null);
     } finally {
       setUploadingId(null);
-      setPhotoTarget(null);
-      if (fileRef.current) fileRef.current.value = "";
     }
+  }
+
+  // ── 2a. Confirmer → ferme la popup ───────────────────────────────────────
+  function handlePreviewConfirm() {
+    setPreviewUrl(null);
+    setCropSourceUrl(null);
+    setPhotoTarget(null);
+  }
+
+  // ── 2b. Rogner manuellement → ouvre le crop modal ────────────────────────
+  // cropSourceUrl est inchangé — CropModal reçoit toujours l'original
+  function handleOpenCrop() {
+    setPreviewUrl(null);
+    setShowCrop(true);
+  }
+
+  // ── 3. Crop confirmé → upload du résultat rogné ──────────────────────────
+  // cropSourceUrl N'EST PAS modifié ici → le prochain rogner repart de l'original
+  async function handleCropConfirm(blob: Blob) {
+    if (!photoTarget) return;
+    setShowCrop(false);
+    setUploadingId(photoTarget.id);
+    try {
+      const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+      const updated = await uploadPhoto(photoTarget.id, file);
+      load();
+      setPreviewUrl(updated.photoUrl ?? null);
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
+      alert(error?.response?.data?.message || "Erreur lors de l'upload");
+      setCropSourceUrl(null);
+      setPhotoTarget(null);
+    } finally {
+      setUploadingId(null);
+    }
+  }
+
+  function handleCropCancel() {
+    setShowCrop(false);
+    // On garde cropSourceUrl : l'utilisateur peut vouloir re-rogner depuis la preview
+    setPhotoTarget(null);
   }
 
   const selectedClass = filterClass
@@ -156,6 +217,22 @@ export default function Students() {
           message={`Supprimer ${confirmTarget.firstName} ${confirmTarget.lastName} ?`}
           onConfirm={confirmDelete}
           onCancel={() => setConfirmTarget(null)}
+        />
+      )}
+
+      {previewUrl && (
+        <PhotoPreviewModal
+          photoUrl={previewUrl}
+          onConfirm={handlePreviewConfirm}
+          onCropManually={handleOpenCrop}
+        />
+      )}
+
+      {showCrop && cropSourceUrl && (
+        <CropModal
+          imageUrl={cropSourceUrl}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
         />
       )}
 
