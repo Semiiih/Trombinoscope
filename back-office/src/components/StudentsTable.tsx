@@ -49,6 +49,7 @@ export default function StudentsTable({
                   {uploadingId === s.id ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                 </button>
               </Tooltip>
+
               <Tooltip label="Modifier">
                 <button onClick={() => onEdit(s)} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
                   <Pencil size={16} />
