@@ -184,7 +184,7 @@ describe('StudentModal', () => {
   });
 
   describe('Photo upload', () => {
-    it('affiche un aperçu de la photo sélectionnée', async () => {
+    it('ouvre le CropModal après sélection d\'une photo', async () => {
       const user = userEvent.setup();
       render(
         <StudentModal
@@ -206,7 +206,9 @@ describe('StudentModal', () => {
       const file = new File(['photo'], 'photo.jpg', { type: 'image/jpeg' });
       await user.upload(photoInput, file);
 
-      expect(photoInput.files?.[0]).toBe(file);
+      await waitFor(() => {
+        expect(screen.getByText('Recadrer la photo')).toBeInTheDocument();
+      });
     });
   });
 

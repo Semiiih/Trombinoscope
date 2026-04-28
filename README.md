@@ -34,12 +34,35 @@ curl http://localhost:3000/health
 
 ```bash
 # Depuis la racine du projet
-npm run dev:bo
+pnpm dev:bo
 ```
 
 Ouvrir http://localhost:5173
 
 ---
+
+## Tests
+
+Depuis la racine :
+
+```bash
+pnpm test:be                  # tous les tests backend (Jest + Supertest)
+pnpm test:bo                  # tous les tests front (Vitest)
+pnpm test:be:cov              # tests backend avec rapport de couverture
+```
+
+---
+
+## Seed (jeu de données par défaut)
+
+Le seed insère 3 classes et 15 élèves avec leurs photos (les avatars sont copiés depuis `backend/prisma/avatars/` vers le volume `/uploads`).
+
+### Charger les fixtures
+
+```bash
+pnpm fixtures:load     # ajoute les données (upsert — sans toucher à l'existant)
+pnpm fixtures:reset    # vide la BDD puis re-seed (utile en dev pour repartir propre)
+```
 
 ## URLs disponibles
 
@@ -53,13 +76,23 @@ Ouvrir http://localhost:5173
 
 ## Commandes racine
 
-Toutes ces commandes s'exécutent **depuis la racine du projet** :
+Toutes ces commandes s'exécutent **depuis la racine du projet** avec `pnpm` :
 
-```bash
-npm run dev:bo        # Lancer le frontend (React + Vite)
-npm run test:be       # Lancer les tests backend
-npm run db            # Ouvrir Adminer (interface BDD) dans le navigateur
-```
+| Commande              | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| `pnpm dev:bo`         | Lancer le **front** (Back Office — React + Vite)       |
+| `pnpm dev:be`         | Lancer le **back** en local (nodemon, sans Docker)     |
+| `pnpm build:bo`       | Build de production du front                           |
+| `pnpm lint:bo`        | Linter le front                                        |
+| `pnpm test:bo`        | Tests **front** (Vitest)                               |
+| `pnpm test:be`        | Tests **back** (Jest + Supertest, mocks Prisma)        |
+| `pnpm test:be:cov`    | Tests back avec rapport de couverture                  |
+| `pnpm fixtures:load`  | Charger le jeu de données seed (3 classes + 15 élèves) |
+| `pnpm fixtures:reset` | Reset complet de la BDD puis re-seed                   |
+| `pnpm studio:be`      | Ouvrir Prisma Studio (UI BDD)                          |
+| `pnpm db`             | Ouvrir Adminer (http://localhost:8089)                 |
+
+> Convention : `:bo` = Back Office (front), `:be` = Backend (API).
 
 ---
 
@@ -90,46 +123,12 @@ docker compose up -d --build
 
 ---
 
-## Seed (jeu de données par défaut)
-
-Le seed insère 3 classes et 15 élèves avec leurs photos.
-
-### Lancer le seed
-
-```bash
-docker cp backend/prisma/seed.js trombi_backend:/app/prisma/seed.js
-docker exec trombi_backend node prisma/seed.js
-```
-
-### Ajouter ou modifier des avatars
-
-1. Placer les images dans `backend/prisma/avatars/` (JPEG ou PNG)
-2. Mettre à jour `backend/prisma/seed.js` avec le bon nom de fichier
-3. Copier et relancer :
-
-```bash
-docker cp backend/prisma/avatars/mon_avatar.jpg trombi_backend:/app/prisma/avatars/mon_avatar.jpg
-docker cp backend/prisma/seed.js trombi_backend:/app/prisma/seed.js
-docker exec trombi_backend node prisma/seed.js
-```
-
----
-
 ## Base de données
 
 ### Accès direct (terminal)
 
 ```bash
 docker exec -it trombi_postgres psql -U trombi -d trombinoscope
-```
-
-Commandes utiles dans psql :
-
-```sql
-\dt                     -- lister les tables
-SELECT * FROM "Class";
-SELECT * FROM "Student";
-\q                      -- quitter
 ```
 
 ### Connexion GUI (Adminer, TablePlus...)
@@ -171,34 +170,6 @@ docker compose up --build backend -d
 
 > Les migrations sont stockées dans `backend/prisma/migrations/`
 > et appliquées automatiquement au démarrage du conteneur.
-
----
-
-## Tests
-
-Depuis la racine :
-
-```bash
-npm run test:be               # tous les tests backend
-```
-
-Ou depuis `backend/` :
-
-```bash
-npm test                      # tous les tests
-npm run test:coverage         # avec rapport de couverture
-```
-
-Les tests utilisent des mocks Prisma — pas besoin de BDD active.
-
-Suites disponibles :
-
-- `tests/health.test.js` — health check
-- `tests/class.test.js` — CRUD classes
-- `tests/student.test.js` — CRUD élèves + suppression photo
-- `tests/csv.test.js` — import CSV (happy path + erreurs + délimiteur `;`)
-- `tests/trombi.test.js` — génération HTML/PDF (fichier non vide vérifié)
-- `tests/photo.test.js` — upload photo + vignette 300×300 sur disque
 
 ---
 
@@ -285,7 +256,7 @@ Trombinoscope-v2/
 │   ├── exports/                  Fichiers trombi générés (ignoré par git)
 │   └── Dockerfile
 ├── docker-compose.yml
-├── package.json                  Scripts racine (dev:bo, test:be, db)
+├── package.json                  Scripts racine pnpm (dev:bo, dev:be, test:bo, test:be, db, ...)
 └── README.md
 ```
 
