@@ -1,11 +1,8 @@
 const path = require("path");
 const sharp = require("sharp");
 const prisma = require("../config/prisma");
-const {
-  getUploadDir,
-  deleteFile,
-  generateFilename,
-} = require("../utils/fileHelper");
+const { generateFilename } = require("../utils/fileHelper");
+const storage = require("./storageService");
 
 async function getStudents({ classId, q }) {
   const where = {};
@@ -72,13 +69,7 @@ async function updateStudent(id, data) {
 async function deleteStudent(id) {
   const student = await getStudentById(id);
   if (student.photoUrl) {
-    const filePath = path.join(getUploadDir(), path.basename(student.photoUrl));
-    deleteFile(filePath);
-    const thumbPath = path.join(
-      getUploadDir(),
-      `thumb_${path.basename(student.photoUrl)}`,
-    );
-    deleteFile(thumbPath);
+    await storage.remove(student.photoUrl);
   }
   return prisma.student.delete({ where: { id } });
 }
@@ -86,28 +77,20 @@ async function deleteStudent(id) {
 async function uploadPhoto(id, file) {
   const student = await getStudentById(id);
 
-  // Delete old photo if it exists
+  // Delete old photo
   if (student.photoUrl) {
-    const oldPath = path.join(getUploadDir(), path.basename(student.photoUrl));
-    deleteFile(oldPath);
-    const oldThumb = path.join(
-      getUploadDir(),
-      `thumb_${path.basename(student.photoUrl)}`,
-    );
-    deleteFile(oldThumb);
+    await storage.remove(student.photoUrl);
   }
 
-  const ext = path.extname(file.filename);
+  const ext = path.extname(file.originalname).toLowerCase();
+  const mimetype = file.mimetype;
   const thumbFilename = generateFilename("thumb", ext);
-  const thumbPath = path.join(getUploadDir(), thumbFilename);
 
-  // Generate 300x300 thumbnail
-  await sharp(file.path)
+  const thumbBuffer = await sharp(file.buffer)
     .resize(300, 300, { fit: "cover", position: "centre" })
-    .jpeg({ quality: 80 })
-    .toFile(thumbPath);
+    .toBuffer();
 
-  const photoUrl = `/uploads/${thumbFilename}`;
+  const photoUrl = await storage.upload(thumbBuffer, thumbFilename, mimetype);
 
   return prisma.student.update({
     where: { id },
