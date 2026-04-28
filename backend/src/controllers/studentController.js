@@ -3,8 +3,8 @@ const csvService = require('../services/csvService');
 
 async function getAll(req, res, next) {
   try {
-    const { class_id, q } = req.query;
-    const students = await studentService.getStudents({ classId: class_id, q });
+    const { class_id, year, q } = req.query;
+    const students = await studentService.getStudents({ classId: class_id, year, q });
     res.json(students);
   } catch (err) {
     next(err);

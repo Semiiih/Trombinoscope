@@ -24,6 +24,7 @@ export default function Students() {
   const [filterClass, setFilterClass] = useState(
     searchParams.get("classId") ?? "",
   );
+  const [filterYear, setFilterYear] = useState("");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Student | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -44,11 +45,12 @@ export default function Students() {
     () =>
       getStudents({
         class_id: filterClass ? Number(filterClass) : undefined,
+        year: !filterClass && filterYear ? filterYear : undefined,
         q: search || undefined,
       })
         .then(setStudents)
         .catch(console.error),
-    [filterClass, search],
+    [filterClass, filterYear, search],
   );
 
   useEffect(() => {
@@ -150,8 +152,8 @@ export default function Students() {
     : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="flex items-center justify-between mb-10">
+    <div className="h-screen flex flex-col bg-slate-50 p-8 overflow-hidden">
+      <div className="flex items-center justify-between mb-10 shrink-0">
         <div>
           <Breadcrumb
             parent="Gestion"
@@ -173,24 +175,35 @@ export default function Students() {
         </button>
       </div>
 
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-3 mb-6 shrink-0">
         <SearchBar
           value={search}
           onChange={setSearch}
           placeholder="Rechercher (nom, email...)"
         />
         <Select
-          value={filterClass}
-          onChange={setFilterClass}
-          placeholder="Toutes les classes"
-          options={classes.map((c) => ({
-            value: String(c.id),
-            label: `${c.label} — ${c.year}`,
+          value={filterYear}
+          onChange={(y) => { setFilterYear(y); setFilterClass(""); }}
+          placeholder="Toutes les promos"
+          options={[...new Set(classes.map((c) => c.year))].sort().reverse().map((y) => ({
+            value: y,
+            label: `Promo ${y}`,
           }))}
+        />
+        <Select
+          value={filterClass}
+          onChange={(c) => { setFilterClass(c); setFilterYear(""); }}
+          placeholder="Toutes les classes"
+          options={classes
+            .filter((c) => !filterYear || c.year === filterYear)
+            .map((c) => ({
+              value: String(c.id),
+              label: `${c.label} — ${c.year}`,
+            }))}
         />
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex-1 overflow-y-auto min-h-0">
         <StudentsTable
           students={students}
           uploadingId={uploadingId}

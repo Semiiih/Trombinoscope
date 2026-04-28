@@ -4,11 +4,13 @@ const prisma = require("../config/prisma");
 const { generateFilename } = require("../utils/fileHelper");
 const storage = require("./storageService");
 
-async function getStudents({ classId, q }) {
+async function getStudents({ classId, year, q }) {
   const where = {};
 
   if (classId) {
     where.classId = parseInt(classId, 10);
+  } else if (year) {
+    where.class = { year };
   }
 
   if (q) {

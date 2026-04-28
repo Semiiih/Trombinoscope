@@ -39,7 +39,7 @@ export const updateClass = (id: number, data: { label: string; year: string }) =
 export const deleteClass = (id: number) => api.delete(`/classes/${id}`);
 
 // Students
-export const getStudents = (params?: { class_id?: number; q?: string }) =>
+export const getStudents = (params?: { class_id?: number; year?: string; q?: string }) =>
   api.get("/students", { params }).then((r) => r.data);
 export const createStudent = (data: {
   firstName: string;
