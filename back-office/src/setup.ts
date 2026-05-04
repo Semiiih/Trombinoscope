@@ -7,8 +7,25 @@ afterEach(() => {
   cleanup();
 });
 
-// Mock pour axios si nécessaire
-vi.mock('axios');
+// Mock Axios client used by src/api/client.ts.
+vi.mock('axios', () => {
+  const client = {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() },
+    },
+  };
+
+  return {
+    default: {
+      create: vi.fn(() => client),
+    },
+  };
+});
 
 // Mock pour les routes React si nécessaire
 vi.mock('react-router-dom', async () => {
