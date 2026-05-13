@@ -36,4 +36,4 @@ USER appuser
 
 EXPOSE 3000
 
-CMD ["node", "src/server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node src/server.js"]
