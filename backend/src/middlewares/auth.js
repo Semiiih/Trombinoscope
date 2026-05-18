@@ -13,11 +13,19 @@ function authenticate(req, res, next) {
   }
 }
 
-function requireAdmin(req, res, next) {
-  if (req.user?.role !== 'ADMIN') {
-    return res.status(403).json({ error: 'Forbidden', message: 'Admin access required' });
-  }
-  next();
+function requireRole(...allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user?.role || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: `Access restricted to roles: ${allowedRoles.join(', ')}`,
+      });
+    }
+    next();
+  };
 }
 
-module.exports = { authenticate, requireAdmin };
+const requireAdmin = requireRole('ADMIN');
+const requireTeacherOrAdmin = requireRole('ADMIN', 'TEACHER');
+
+module.exports = { authenticate, requireRole, requireAdmin, requireTeacherOrAdmin };

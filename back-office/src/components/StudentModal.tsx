@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { createStudent, updateStudent, uploadPhoto } from "../api/client";
 import type { Class, Student } from "../types";
 import Modal from "./Modal";
@@ -84,6 +85,7 @@ export default function StudentModal({
         studentId = created.id;
       }
       if (photoFile) await uploadPhoto(studentId, photoFile);
+      toast.success(editing ? "Élève modifié" : "Élève créé");
       onSaved();
       onClose();
     } catch (err: unknown) {

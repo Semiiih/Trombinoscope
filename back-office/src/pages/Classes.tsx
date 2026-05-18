@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { getClasses, deleteClass } from "../api/client";
 import type { Class } from "../types";
 import ClassesTable from "../components/ClassesTable";
@@ -26,9 +27,15 @@ export default function Classes() {
 
   async function confirmDelete() {
     if (!confirmTarget) return;
-    try { await deleteClass(confirmTarget.id); load(); }
-    catch { alert("Erreur lors de la suppression"); }
-    finally { setConfirmTarget(null); }
+    try {
+      await deleteClass(confirmTarget.id);
+      toast.success(`Classe "${confirmTarget.label}" supprimée`);
+      load();
+    } catch {
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setConfirmTarget(null);
+    }
   }
 
   return (

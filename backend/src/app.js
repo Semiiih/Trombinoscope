@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const classRoutes = require('./routes/classRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const trombiRoutes = require('./routes/trombiRoutes');
+const promoRoutes = require('./routes/promoRoutes');
 const { errorHandler, notFound } = require('./middlewares/errorHandler');
 const logger = require('./utils/logger');
 
@@ -22,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/exports', express.static(path.join(__dirname, '../exports')));
 
 // Request logger
 app.use((req, _res, next) => {
@@ -36,9 +38,15 @@ app.get('/health', (_req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+
+// Spec alias: GET /api/me
+const { authenticate } = require('./middlewares/auth');
+const authController = require('./controllers/authController');
+app.get('/api/me', authenticate, authController.me);
 app.use('/api/classes', classRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/trombi', trombiRoutes);
+app.use('/api/promos', promoRoutes);
 
 // 404 handler
 app.use(notFound);

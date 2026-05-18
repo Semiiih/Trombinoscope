@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { createClass, updateClass } from "../api/client";
 import type { Class } from "../types";
 import Modal from "./Modal";
@@ -26,6 +27,7 @@ export default function ClassModal({
     try {
       if (editing) await updateClass(editing.id, form);
       else await createClass(form);
+      toast.success(editing ? "Classe modifiée" : "Classe créée");
       onSaved();
       onClose();
     } catch (err: unknown) {

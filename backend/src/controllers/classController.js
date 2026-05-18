@@ -2,8 +2,18 @@ const classService = require('../services/classService');
 
 async function getAll(req, res, next) {
   try {
-    const classes = await classService.getAllClasses();
+    const { year } = req.query;
+    const classes = await classService.getAllClasses({ year });
     res.json(classes);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function listPromos(_req, res, next) {
+  try {
+    const promos = await classService.getPromos();
+    res.json(promos);
   } catch (err) {
     next(err);
   }
@@ -45,4 +55,4 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { getAll, getOne, create, update, remove };
+module.exports = { getAll, listPromos, getOne, create, update, remove };

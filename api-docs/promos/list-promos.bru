@@ -1,0 +1,25 @@
+meta {
+  name: List Promos
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/promos
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Liste toutes les promotions distinctes avec un compteur de classes et d'élèves.
+  Accessible aux rôles ADMIN et TEACHER.
+
+  Réponse:
+  [
+    { "year": "2024-2025", "classesCount": 3, "studentsCount": 75 }
+  ]
+}

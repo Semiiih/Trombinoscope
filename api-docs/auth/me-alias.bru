@@ -1,0 +1,20 @@
+meta {
+  name: Me (alias /api/me)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Alias de GET /api/auth/me — correspond à la spec du cahier des charges.
+  Retourne le profil de l'utilisateur courant (id, email, role, createdAt).
+}

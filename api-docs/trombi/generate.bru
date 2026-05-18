@@ -17,4 +17,11 @@ auth:bearer {
 params:query {
   class_id: 1
   format: pdf
+  ~return: url
+}
+
+docs {
+  Génère le trombinoscope HTML ou PDF d'une classe.
+  - Par défaut : renvoie directement le fichier (Content-Disposition attachment).
+  - Avec ?return=url : renvoie un JSON { url, format, filename, class } où `url` pointe vers le fichier statique servi sur /exports/...
 }

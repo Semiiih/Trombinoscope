@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const trombiController = require('../controllers/trombiController');
-const { authenticate } = require('../middlewares/auth');
+const { authenticate, requireTeacherOrAdmin } = require('../middlewares/auth');
 
-router.get('/', authenticate, trombiController.generate);
+router.get('/', authenticate, requireTeacherOrAdmin, trombiController.generate);
 
 module.exports = router;

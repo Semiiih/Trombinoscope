@@ -47,8 +47,14 @@ async function upload(buffer, filename, mimetype) {
         ContentType: mimetype,
       }),
     );
-    const endpoint = (process.env.S3_ENDPOINT || "").replace(/\/$/, "");
-    return `${endpoint}/${S3_BUCKET}/${filename}`;
+    // URL publique pour le navigateur (peut différer de l'endpoint interne).
+    // En prod : S3_PUBLIC_URL=https://minio.example.com
+    // En dev local : généralement http://localhost:9000
+    const publicBase =
+      process.env.S3_PUBLIC_URL ||
+      process.env.S3_ENDPOINT ||
+      "";
+    return `${publicBase.replace(/\/$/, "")}/${S3_BUCKET}/${filename}`;
   }
 
   const filePath = path.join(getUploadDir(), filename);

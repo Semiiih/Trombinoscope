@@ -129,44 +129,111 @@ async function generatePdf(cls, filePath) {
       }),
   );
 
+  const logoPath = path.join(__dirname, "../../assets/logo.png");
+  const hasLogo = fs.existsSync(logoPath);
+
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const MARGIN = 30;
+    const doc = new PDFDocument({ margin: MARGIN, size: "A4", autoFirstPage: false });
     const stream = fs.createWriteStream(filePath);
     doc.pipe(stream);
 
-    // Title
-    doc
-      .fontSize(22)
-      .fillColor("#4338ca")
-      .text(`${cls.label} — ${cls.year}`, { align: "center" });
-    doc
-      .fontSize(11)
-      .fillColor("#6b7280")
-      .text(`${cls.students.length} élève(s)`, { align: "center" });
-    doc.moveDown(1);
-
-    const COLS     = 4;
-    const MARGIN   = 40;
-    const GAP_X    = 12;
-    const GAP_Y    = 14;
-    const CARD_W   = (doc.page.width - MARGIN * 2 - GAP_X * (COLS - 1)) / COLS;
-    const PHOTO_D  = 60;
-    const PAD_TOP  = 12;
-    const PAD_BOT  = 12;
-    const NAME_H   = 11;
-    const EMAIL_H  = 9;
-    const CARD_H   = PAD_TOP + PHOTO_D + 6 + NAME_H + 3 + EMAIL_H + PAD_BOT;
-    // Footer height: date line (10pt) + gap (6pt) + RGPD line (max 2 lines × 8pt = 16pt)
+    // ── Constantes layout ─────────────────────────────────────────────
+    const HEADER_H = 56;
+    const LOGO_D   = 40;
+    const COLS     = 5;
+    const ROWS     = 6;
+    const GAP_X    = 8;
+    const GAP_Y    = 8;
+    const PAD_TOP  = 8;
+    const PAD_BOT  = 8;
+    const NAME_H   = 10;
+    const EMAIL_H  = 8;
     const FOOTER_H = 36;
-    const footerY  = doc.page.height - MARGIN - FOOTER_H;
+
+    const pageW    = 595.28; // A4 width
+    const pageH    = 841.89; // A4 height
+    const CARD_W   = (pageW - MARGIN * 2 - GAP_X * (COLS - 1)) / COLS;
+    const footerY  = pageH - MARGIN - FOOTER_H;
+    const gridTop  = MARGIN + HEADER_H + 8;
+    const gridH    = footerY - gridTop - GAP_Y;
+    const CARD_H   = (gridH - GAP_Y * (ROWS - 1)) / ROWS;
+    const PHOTO_D  = CARD_H - PAD_TOP - 4 - NAME_H - 2 - EMAIL_H - PAD_BOT;
+
+    const RGPD =
+      "Les données personnelles présentes dans ce document (nom, prénom, photo) sont utilisées " +
+      "dans le cadre pédagogique conformément au RGPD (Règlement UE 2016/679). " +
+      "Toute reproduction ou diffusion à des fins autres qu'éducatives est interdite. " +
+      "Droits d'accès, rectification et suppression : contacter l'établissement.";
+
+    function drawHeader() {
+      if (hasLogo) {
+        doc.image(logoPath, MARGIN, MARGIN, { width: LOGO_D, height: LOGO_D });
+      } else {
+        doc.roundedRect(MARGIN, MARGIN, LOGO_D, LOGO_D, 10).fill("#4338ca");
+        doc
+          .fontSize(22)
+          .fillColor("#ffffff")
+          .font("Helvetica-Bold")
+          .text("T", MARGIN, MARGIN + 9, { width: LOGO_D, align: "center" });
+      }
+      doc
+        .fontSize(16)
+        .fillColor("#4338ca")
+        .font("Helvetica-Bold")
+        .text(
+          `Trombinoscope – Classe ${cls.label} (${cls.year})`,
+          MARGIN + LOGO_D + 12,
+          MARGIN + 6,
+          { width: pageW - MARGIN * 2 - LOGO_D - 12 },
+        );
+      doc
+        .fontSize(10)
+        .fillColor("#6b7280")
+        .font("Helvetica")
+        .text(
+          `${cls.students.length} élève(s)`,
+          MARGIN + LOGO_D + 12,
+          MARGIN + 26,
+          { width: pageW - MARGIN * 2 - LOGO_D - 12 },
+        );
+    }
+
+    function drawFooter() {
+      doc
+        .fontSize(7)
+        .fillColor("#6b7280")
+        .font("Helvetica")
+        .text(
+          `Généré le ${new Date().toLocaleDateString("fr-FR")} — Trombinoscope v2`,
+          MARGIN,
+          footerY,
+          { width: pageW - MARGIN * 2, align: "center" },
+        )
+        .fontSize(5.5)
+        .fillColor("#9ca3af")
+        .text(RGPD, MARGIN, footerY + 14, {
+          width: pageW - MARGIN * 2,
+          align: "center",
+        });
+    }
+
+    doc.on("pageAdded", () => {
+      drawHeader();
+      drawFooter();
+    });
+
+    doc.addPage(); // déclenche drawHeader/drawFooter pour la 1ère page
 
     let x = MARGIN;
-    let y = doc.y;
+    let y = gridTop;
+    const PER_PAGE = COLS * ROWS;
 
     cls.students.forEach((student, i) => {
-      if (y + CARD_H > footerY - GAP_Y) {
+      // Saut de page tous les 30 élèves pour garder exactement la grille 5×6
+      if (i > 0 && i % PER_PAGE === 0) {
         doc.addPage();
-        y = MARGIN;
+        y = gridTop;
         x = MARGIN;
       }
 
@@ -200,22 +267,22 @@ async function generatePdf(cls, filePath) {
           .text(initials, photoX, cy - 9, { width: PHOTO_D, align: "center" });
       }
 
-      const textY = photoY + PHOTO_D + 6;
+      const textY = photoY + PHOTO_D + 4;
       doc
-        .fontSize(8)
+        .fontSize(7.5)
         .fillColor("#1f2937")
         .font("Helvetica-Bold")
-        .text(`${student.firstName} ${student.lastName}`, x + 4, textY, {
-          width: CARD_W - 8,
+        .text(`${student.firstName} ${student.lastName}`, x + 3, textY, {
+          width: CARD_W - 6,
           align: "center",
           ellipsis: true,
         });
       doc
-        .fontSize(6.5)
+        .fontSize(6)
         .fillColor("#6b7280")
         .font("Helvetica")
-        .text(student.email, x + 4, textY + NAME_H + 3, {
-          width: CARD_W - 8,
+        .text(student.email, x + 3, textY + NAME_H + 2, {
+          width: CARD_W - 6,
           align: "center",
           ellipsis: true,
         });
@@ -227,28 +294,6 @@ async function generatePdf(cls, filePath) {
         x += CARD_W + GAP_X;
       }
     });
-
-    const RGPD =
-      "Les données personnelles présentes dans ce document (nom, prénom, photo) sont utilisées " +
-      "dans le cadre pédagogique conformément au RGPD (Règlement UE 2016/679). " +
-      "Toute reproduction ou diffusion à des fins autres qu'éducatives est interdite. " +
-      "Droits d'accès, rectification et suppression : contacter l'établissement.";
-
-    doc
-      .fontSize(7)
-      .fillColor("#6b7280")
-      .text(
-        `Généré le ${new Date().toLocaleDateString("fr-FR")} — Trombinoscope v2`,
-        MARGIN,
-        footerY,
-        { width: doc.page.width - MARGIN * 2, align: "center" },
-      )
-      .fontSize(5.5)
-      .fillColor("#9ca3af")
-      .text(RGPD, MARGIN, footerY + 14, {
-        width: doc.page.width - MARGIN * 2,
-        align: "center",
-      });
 
     doc.end();
     stream.on("finish", resolve);

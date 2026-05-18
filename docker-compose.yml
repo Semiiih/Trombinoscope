@@ -68,6 +68,7 @@ services:
       JWT_SECRET: dev_secret_change_in_prod
       STORAGE: s3
       S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://localhost:9000}
       S3_BUCKET: trombi-uploads
       S3_KEY: minioadmin
       S3_SECRET: minioadmin
@@ -77,6 +78,17 @@ services:
       - ./backend/prisma:/app/prisma
     command: >
       sh -c "npx prisma db push --accept-data-loss && node src/server.js"
+
+  frontend:
+    build:
+      context: ./back-office
+      dockerfile: Dockerfile
+    container_name: trombi_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
 
   adminer:
     container_name: trombi_adminer

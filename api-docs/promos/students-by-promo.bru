@@ -1,0 +1,25 @@
+meta {
+  name: Students By Promo
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/promos/2024-2025/students
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+params:query {
+  ~q: dupont
+}
+
+docs {
+  Liste tous les élèves d'une promo donnée (paramètre :year).
+  Combinable avec le filtre texte ?q= (nom, prénom, email).
+  Accessible aux rôles ADMIN et TEACHER.
+}

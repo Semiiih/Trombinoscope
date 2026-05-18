@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { getClasses, downloadTrombi } from "../api/client";
 import type { Class } from "../types";
 import Select from "../components/Select";
@@ -8,8 +9,6 @@ export default function Trombi() {
   const [classId, setClassId] = useState("");
   const [format, setFormat] = useState<"html" | "pdf">("html");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     getClasses().then(setClasses).catch(console.error);
@@ -19,8 +18,6 @@ export default function Trombi() {
     e.preventDefault();
     if (!classId) return;
     setLoading(true);
-    setError("");
-    setSuccess("");
     try {
       const blob = await downloadTrombi(Number(classId), format);
       const cls = classes.find((c) => c.id === Number(classId));
@@ -31,10 +28,10 @@ export default function Trombi() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      setSuccess(`Fichier "${filename}" téléchargé avec succès !`);
+      toast.success(`Fichier "${filename}" téléchargé`);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e?.response?.data?.message || "Erreur lors de la génération");
+      toast.error(e?.response?.data?.message || "Erreur lors de la génération");
     } finally {
       setLoading(false);
     }
@@ -106,17 +103,6 @@ export default function Trombi() {
             ))}
           </div>
         </div>
-
-        {error && (
-          <p className="text-sm text-red-500 bg-red-50 px-4 py-3 rounded-lg">
-            {error}
-          </p>
-        )}
-        {success && (
-          <p className="text-sm text-emerald-600 bg-emerald-50 px-4 py-3 rounded-lg">
-            {success}
-          </p>
-        )}
 
         <button
           type="submit"

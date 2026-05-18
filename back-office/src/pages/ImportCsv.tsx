@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { importCsv } from "../api/client";
 import type { ImportResult } from "../types";
 import CsvFormatInfo from "../components/CsvFormatInfo";
@@ -18,10 +19,19 @@ export default function ImportCsv() {
     setError("");
     setResult(null);
     try {
-      setResult(await importCsv(file));
+      const res = await importCsv(file);
+      setResult(res);
+      const errCount = res.errors ?? 0;
+      if (errCount > 0) {
+        toast.warning(`Import terminé : ${res.created} créés, ${errCount} en erreur`);
+      } else {
+        toast.success(`Import réussi : ${res.created} élève(s) créé(s)`);
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e?.response?.data?.message || "Erreur lors de l'import");
+      const msg = e?.response?.data?.message || "Erreur lors de l'import";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

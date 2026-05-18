@@ -13,6 +13,27 @@
     "fixtures:load": "docker exec trombi_backend node prisma/seed.js",
     "fixtures:reset": "docker exec trombi_backend npx prisma db push --force-reset --accept-data-loss && docker exec trombi_backend node prisma/seed.js",
     "studio:be": "pnpm -C backend prisma:studio",
-    "db": "open http://localhost:8089"
+    "db": "open http://localhost:8089",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:stop": "docker compose stop",
+    "docker:start": "docker compose start",
+    "docker:restart": "docker compose restart",
+    "docker:logs": "docker compose logs -f",
+    "docker:ps": "docker compose ps",
+    "docker:build": "docker compose build",
+    "docker:reset": "docker compose down -v && docker compose up -d",
+    "start:database": "docker compose up -d postgres",
+    "stop:database": "docker compose stop postgres",
+    "start:minio": "docker compose up -d minio",
+    "stop:minio": "docker compose stop minio",
+    "start:adminer": "docker compose up -d adminer",
+    "stop:adminer": "docker compose stop adminer",
+    "start:backend:docker": "docker compose up -d backend",
+    "stop:backend:docker": "docker compose stop backend",
+    "start:frontend:docker": "docker compose up -d frontend",
+    "stop:frontend:docker": "docker compose stop frontend",
+    "start:infra": "docker compose up -d postgres minio adminer",
+    "stop:infra": "docker compose stop postgres minio adminer"
   }
 }

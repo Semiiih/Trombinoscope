@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import { LayoutGrid, List, Upload } from "lucide-react";
 import {
   getClasses,
   getStudents,
@@ -11,6 +13,7 @@ import Select from "../components/Select";
 import SearchBar from "../components/SearchBar";
 import Breadcrumb from "../components/Breadcrumb";
 import StudentsTable from "../components/StudentsTable";
+import StudentsGrid from "../components/StudentsGrid";
 import StudentModal from "../components/StudentModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CropModal from "../components/CropModal";
@@ -30,6 +33,7 @@ export default function Students() {
   const [showModal, setShowModal] = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Student | null>(null);
+  const [view, setView] = useState<"table" | "grid">("table");
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [photoTarget, setPhotoTarget] = useState<Student | null>(null);
@@ -73,9 +77,10 @@ export default function Students() {
     if (!confirmTarget) return;
     try {
       await deleteStudent(confirmTarget.id);
+      toast.success(`${confirmTarget.firstName} ${confirmTarget.lastName} supprimé(e)`);
       load();
     } catch {
-      alert("Erreur lors de la suppression");
+      toast.error("Erreur lors de la suppression");
     } finally {
       setConfirmTarget(null);
     }
@@ -94,11 +99,12 @@ export default function Students() {
     setUploadingId(photoTarget.id);
     try {
       const updated = await uploadPhoto(photoTarget.id, file);
+      toast.success("Photo mise à jour");
       load();
       setPreviewUrl(updated.photoUrl ?? null);
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      alert(error?.response?.data?.message || "Erreur lors de l'upload");
+      toast.error(error?.response?.data?.message || "Erreur lors de l'upload");
       setCropSourceUrl(null);
       setPhotoTarget(null);
     } finally {
@@ -129,11 +135,12 @@ export default function Students() {
     try {
       const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
       const updated = await uploadPhoto(photoTarget.id, file);
+      toast.success("Photo rognée et mise à jour");
       load();
       setPreviewUrl(updated.photoUrl ?? null);
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      alert(error?.response?.data?.message || "Erreur lors de l'upload");
+      toast.error(error?.response?.data?.message || "Erreur lors de l'upload");
       setCropSourceUrl(null);
       setPhotoTarget(null);
     } finally {
@@ -167,15 +174,24 @@ export default function Students() {
             {students.length} élève{students.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
-        >
-          + Nouvel élève
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/import"
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          >
+            <Upload size={16} />
+            Importer CSV
+          </Link>
+          <button
+            onClick={openCreate}
+            className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          >
+            + Nouvel élève
+          </button>
+        </div>
       </div>
 
-      <div className="flex gap-3 mb-6 shrink-0">
+      <div className="flex gap-3 mb-6 shrink-0 items-stretch">
         <SearchBar
           value={search}
           onChange={setSearch}
@@ -201,19 +217,52 @@ export default function Students() {
               label: `${c.label} — ${c.year}`,
             }))}
         />
+        <div className="ml-auto flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setView("table")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${view === "table" ? "bg-violet-100 text-violet-700" : "text-slate-500 hover:text-slate-700"}`}
+            title="Vue tableau"
+          >
+            <List size={14} />
+            Tableau
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("grid")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${view === "grid" ? "bg-violet-100 text-violet-700" : "text-slate-500 hover:text-slate-700"}`}
+            title="Vue grille"
+          >
+            <LayoutGrid size={14} />
+            Grille
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex-1 overflow-y-auto min-h-0">
-        <StudentsTable
-          students={students}
-          uploadingId={uploadingId}
-          onEdit={openEdit}
-          onDelete={setConfirmTarget}
-          onPhotoUpload={(s) => {
-            setPhotoTarget(s);
-            fileRef.current?.click();
-          }}
-        />
+        {view === "table" ? (
+          <StudentsTable
+            students={students}
+            uploadingId={uploadingId}
+            onEdit={openEdit}
+            onDelete={setConfirmTarget}
+            onPhotoUpload={(s) => {
+              setPhotoTarget(s);
+              fileRef.current?.click();
+            }}
+          />
+        ) : (
+          <StudentsGrid
+            students={students}
+            uploadingId={uploadingId}
+            onEdit={openEdit}
+            onDelete={setConfirmTarget}
+            onPhotoUpload={(s) => {
+              setPhotoTarget(s);
+              fileRef.current?.click();
+            }}
+          />
+        )}
       </div>
 
       <input

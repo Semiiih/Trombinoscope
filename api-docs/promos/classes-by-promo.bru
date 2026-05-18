@@ -1,0 +1,20 @@
+meta {
+  name: Classes By Promo
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/promos/2024-2025/classes
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Liste toutes les classes appartenant à une promo donnée (paramètre :year).
+  Accessible aux rôles ADMIN et TEACHER.
+}

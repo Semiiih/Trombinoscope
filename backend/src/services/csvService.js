@@ -19,7 +19,7 @@ async function importStudents(buffer) {
   const details = [];
 
   for (const record of records) {
-    const { first_name, last_name, email, class_label, year } = record;
+    const { first_name, last_name, email, class_label, year, photo_url } = record;
 
     // Validate required fields
     if (!first_name || !last_name || !email || !class_label || !year) {
@@ -40,18 +40,22 @@ async function importStudents(buffer) {
     try {
       const cls = await findOrCreateClass(class_label.trim(), year.trim());
 
+      const photoUrl = photo_url?.trim() || null;
+
       await prisma.student.upsert({
         where: { email: email.trim().toLowerCase() },
         update: {
           firstName: first_name.trim(),
           lastName: last_name.trim(),
           classId: cls.id,
+          ...(photoUrl ? { photoUrl } : {}),
         },
         create: {
           firstName: first_name.trim(),
           lastName: last_name.trim(),
           email: email.trim().toLowerCase(),
           classId: cls.id,
+          photoUrl,
         },
       });
 

@@ -1,4 +1,3 @@
-const path = require("path");
 const sharp = require("sharp");
 const prisma = require("../config/prisma");
 const { generateFilename } = require("../utils/fileHelper");
@@ -84,15 +83,14 @@ async function uploadPhoto(id, file) {
     await storage.remove(student.photoUrl);
   }
 
-  const ext = path.extname(file.originalname).toLowerCase();
-  const mimetype = file.mimetype;
-  const thumbFilename = generateFilename("thumb", ext);
+  const thumbFilename = generateFilename("thumb", ".jpg");
 
   const thumbBuffer = await sharp(file.buffer)
     .resize(300, 300, { fit: "cover", position: "centre" })
+    .jpeg({ quality: 80, mozjpeg: true })
     .toBuffer();
 
-  const photoUrl = await storage.upload(thumbBuffer, thumbFilename, mimetype);
+  const photoUrl = await storage.upload(thumbBuffer, thumbFilename, "image/jpeg");
 
   return prisma.student.update({
     where: { id },

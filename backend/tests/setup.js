@@ -1,5 +1,6 @@
-// Set JWT secret before app loads
+// Set JWT secret and force local storage before app loads
 process.env.JWT_SECRET = 'test-secret';
+process.env.STORAGE = 'local';
 
 // Mock Prisma client for all tests
 jest.mock('../src/config/prisma', () => ({

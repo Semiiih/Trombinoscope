@@ -1,10 +1,31 @@
 const prisma = require('../config/prisma');
 
-async function getAllClasses() {
+async function getAllClasses({ year } = {}) {
+  const where = {};
+  if (year) where.year = year;
   return prisma.class.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
     include: { _count: { select: { students: true } } },
   });
+}
+
+async function getPromos() {
+  const classes = await prisma.class.findMany({
+    orderBy: { year: 'desc' },
+    include: { _count: { select: { students: true } } },
+  });
+
+  const map = new Map();
+  for (const c of classes) {
+    if (!map.has(c.year)) {
+      map.set(c.year, { year: c.year, classesCount: 0, studentsCount: 0 });
+    }
+    const entry = map.get(c.year);
+    entry.classesCount += 1;
+    entry.studentsCount += c._count.students;
+  }
+  return Array.from(map.values()).sort((a, b) => b.year.localeCompare(a.year));
 }
 
 async function getClassById(id) {
@@ -42,4 +63,4 @@ async function findOrCreateClass(label, year) {
   return cls;
 }
 
-module.exports = { getAllClasses, getClassById, createClass, updateClass, deleteClass, findOrCreateClass };
+module.exports = { getAllClasses, getPromos, getClassById, createClass, updateClass, deleteClass, findOrCreateClass };
