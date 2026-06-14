@@ -33,7 +33,9 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-white tracking-tight">
             Trombinoscope
           </h1>
-          <p className="text-indigo-300 mt-2 text-sm">Connexion au back-office</p>
+          <p className="text-indigo-300 mt-2 text-sm">
+            Connexion au back-office
+          </p>
         </div>
 
         <form
@@ -55,7 +57,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="admin@trombi.fr"
+              placeholder="mail@mail.fr"
             />
           </div>
 

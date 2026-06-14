@@ -1,4 +1,6 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+
+const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
 
 export interface AuthUser {
   id: number;
@@ -22,7 +24,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
   const [user, setUser] = useState<AuthUser | null>(() => {
     const raw = localStorage.getItem("user");
-    return raw ? JSON.parse(raw) : null;
+    if (!raw || raw === "undefined" || raw === "null") return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      localStorage.removeItem("user");
+      return null;
+    }
   });
 
   function login(token: string, user: AuthUser) {
@@ -38,6 +46,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
   }
+
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+
+    function resetTimer() {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(logout, INACTIVITY_LIMIT_MS);
+    }
+
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, resetTimer));
+    resetTimer();
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      events.forEach((e) => window.removeEventListener(e, resetTimer));
+    };
+  }, [token]);
 
   return (
     <AuthContext.Provider
