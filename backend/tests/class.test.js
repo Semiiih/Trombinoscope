@@ -162,7 +162,7 @@ describe('Classes API', () => {
 
   describe('DELETE /api/classes/:id', () => {
     it('deletes a class with no students', async () => {
-      const existing = { id: 1, label: 'BTS SIO', year: '2024', createdAt: new Date(), students: [] };
+      const existing = { id: 1, label: 'BTS SIO', year: '2024', createdAt: new Date(), _count: { students: 0, exports: 0 } };
       prisma.class.findUnique.mockResolvedValue(existing);
       prisma.class.delete.mockResolvedValue(existing);
 
@@ -179,18 +179,29 @@ describe('Classes API', () => {
       expect(res.status).toBe(404);
     });
 
-    it('returns 409 when class has students (FK constraint)', async () => {
+    it('returns 409 when class has students', async () => {
       const classWithStudents = {
         id: 1,
         label: 'BTS SIO',
         year: '2024',
-        students: [{ id: 1, firstName: 'Alice' }],
+        _count: { students: 1, exports: 0 },
       };
       prisma.class.findUnique.mockResolvedValue(classWithStudents);
 
-      const p2003Error = new Error('Foreign key constraint failed');
-      p2003Error.code = 'P2003';
-      prisma.class.delete.mockRejectedValue(p2003Error);
+      const res = await request(app).delete('/api/classes/1').set('Authorization', global.adminAuth);
+
+      expect(res.status).toBe(409);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('returns 409 when class has generated exports', async () => {
+      const classWithExports = {
+        id: 1,
+        label: 'BTS SIO',
+        year: '2024',
+        _count: { students: 0, exports: 2 },
+      };
+      prisma.class.findUnique.mockResolvedValue(classWithExports);
 
       const res = await request(app).delete('/api/classes/1').set('Authorization', global.adminAuth);
 
