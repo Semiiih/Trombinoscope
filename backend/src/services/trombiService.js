@@ -66,19 +66,20 @@ async function generateHtml(cls, filePath) {
         const ext = path.extname(s.photoUrl).slice(1).toLowerCase();
         const mime = ext === "jpg" ? "jpeg" : ext;
         const base64 = buf.toString("base64");
-        photo = `<img src="data:image/${mime};base64,${base64}" alt="${s.firstName} ${s.lastName}" class="w-full h-full object-cover" />`;
+        photo = `<img src="data:image/${mime};base64,${base64}" alt="${escapeHtml(s.firstName)} ${escapeHtml(s.lastName)}" class="w-full h-full object-cover" />`;
       } else {
-        photo = `<div class="flex items-center justify-center h-full bg-gray-200 text-gray-400 text-4xl font-bold">${s.firstName[0]}${s.lastName[0]}</div>`;
+        const initials = `${s.firstName[0] ?? ""}${s.lastName[0] ?? ""}`.toUpperCase();
+        photo = `<div class="flex items-center justify-center w-full h-full bg-indigo-100 text-indigo-700 text-2xl font-bold">${initials}</div>`;
       }
 
       return `
-      <div class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col items-center p-4 gap-3">
-        <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-indigo-300">
+      <div class="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow flex flex-col items-center px-5 py-6 gap-4 min-w-0">
+        <div class="w-28 h-28 rounded-full overflow-hidden border-2 border-indigo-300 shrink-0">
           ${photo}
         </div>
-        <div class="text-center">
-          <p class="font-semibold text-gray-800">${escapeHtml(s.firstName)} ${escapeHtml(s.lastName)}</p>
-          <p class="text-sm text-gray-500">${escapeHtml(s.email)}</p>
+        <div class="text-center w-full min-w-0">
+          <p class="font-semibold text-gray-800 truncate" title="${escapeHtml(s.firstName)} ${escapeHtml(s.lastName)}">${escapeHtml(s.firstName)} ${escapeHtml(s.lastName)}</p>
+          <p class="text-xs text-gray-500 truncate mt-1" title="${escapeHtml(s.email)}">${escapeHtml(s.email)}</p>
         </div>
       </div>`;
     })
@@ -99,7 +100,7 @@ async function generateHtml(cls, filePath) {
       <p class="text-gray-500 mt-2">Promotion ${escapeHtml(cls.year)}</p>
       <p class="text-sm text-gray-400 mt-1">${cls.students.length} élève(s)</p>
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       ${studentCards}
     </div>
     <footer class="text-center mt-12 text-xs text-gray-400 border-t border-gray-200 pt-4">
@@ -248,16 +249,24 @@ async function generatePdf(cls, filePath) {
       const r = PHOTO_D / 2;
 
       const photoBuf = photoMap.get(student.id);
+      let imageDrawn = false;
       if (photoBuf) {
-        doc.save();
-        doc.circle(cx, cy, r).clip();
-        doc.image(photoBuf, photoX, photoY, {
-          width: PHOTO_D,
-          height: PHOTO_D,
-        });
-        doc.restore();
-        doc.circle(cx, cy, r).lineWidth(1.5).stroke("#a5b4fc");
-      } else {
+        try {
+          doc.save();
+          doc.circle(cx, cy, r).clip();
+          doc.image(photoBuf, photoX, photoY, {
+            width: PHOTO_D,
+            height: PHOTO_D,
+          });
+          doc.restore();
+          doc.circle(cx, cy, r).lineWidth(1.5).stroke("#a5b4fc");
+          imageDrawn = true;
+        } catch (err) {
+          doc.restore();
+          console.warn(`Photo invalide pour ${student.email}: ${err.message}`);
+        }
+      }
+      if (!imageDrawn) {
         doc.circle(cx, cy, r).fillAndStroke("#e0e7ff", "#a5b4fc");
         const initials =
           `${student.firstName[0]}${student.lastName[0]}`.toUpperCase();

@@ -21,14 +21,16 @@ if (STORAGE === "s3") {
 }
 
 function extractKey(photoUrl) {
-  if (photoUrl.startsWith("http")) {
-    const { pathname } = new URL(photoUrl);
-    return pathname.split("/").slice(2).join("/");
-  }
-  return path.basename(photoUrl);
+  const pathname = photoUrl.startsWith("http")
+    ? new URL(photoUrl).pathname
+    : photoUrl;
+  return path.basename(pathname);
 }
 
 async function streamToBuffer(stream) {
+  if (stream && typeof stream.transformToByteArray === "function") {
+    return Buffer.from(await stream.transformToByteArray());
+  }
   const chunks = [];
   for await (const chunk of stream) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
