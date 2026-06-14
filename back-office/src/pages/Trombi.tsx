@@ -40,18 +40,18 @@ export default function Trombi() {
   const selectedClass = classes.find((c) => c.id === Number(classId));
 
   return (
-    <div className="p-8 max-w-2xl">
-      <h2 className="text-2xl font-bold text-gray-800 mb-1">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6 md:p-8 max-w-2xl">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">
         Générer un Trombinoscope
       </h2>
-      <p className="text-gray-500 mb-8">
+      <p className="text-gray-500 mb-6 md:mb-8 text-sm sm:text-base">
         Sélectionnez une classe et un format pour générer et télécharger le
         trombinoscope.
       </p>
 
       <form
         onSubmit={handleGenerate}
-        className="bg-white rounded-xl border border-gray-200 p-6 space-y-6"
+        className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-6"
       >
         {/* Classe */}
         <div>
@@ -79,7 +79,7 @@ export default function Trombi() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Format
           </label>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             {(["html", "pdf"] as const).map((f) => (
               <label
                 key={f}

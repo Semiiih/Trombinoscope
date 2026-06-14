@@ -20,35 +20,35 @@ export default function Dashboard() {
   const totalStudents = classes.reduce((s, c) => s + (c._count?.students ?? 0), 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="mb-10">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6 md:p-8">
+      <div className="mb-6 md:mb-10">
         <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase mb-2">Tableau de bord</p>
-        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Vue d'ensemble</h1>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Vue d'ensemble</h1>
         <p className="text-sm text-slate-400 mt-1">Gérez vos classes et élèves depuis un seul endroit.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-8 md:mb-12">
         <StatCard label="Classes"        value={classes.length} accent="violet" />
         <StatCard label="Élèves"         value={totalStudents}  accent="emerald" />
         <StatCard label="Formats export" value="HTML & PDF"     accent="amber" />
       </div>
 
       <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase mb-4">Accès rapide</p>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 md:mb-12">
         {QUICK_LINKS.map((link) => <QuickLinkCard key={link.to} {...link} />)}
       </div>
 
       {classes.length > 0 && (
         <>
           <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase mb-4">Classes enregistrées</p>
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-sm">
             <Table columns={["Classe", "Année", "Élèves"]} empty={{ icon: "🎓", message: "" }}>
               {classes.map((cls) => (
                 <tr key={cls.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 font-semibold text-slate-700">{cls.label}</td>
-                  <td className="px-6 py-4 text-slate-400">{cls.year}</td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="inline-block bg-violet-100 text-violet-600 text-xs font-semibold px-3 py-1 rounded-full">
+                  <td className="px-4 sm:px-6 py-4 font-semibold text-slate-700">{cls.label}</td>
+                  <td className="px-4 sm:px-6 py-4 text-slate-400">{cls.year}</td>
+                  <td className="px-4 sm:px-6 py-4 text-right">
+                    <span className="inline-block bg-violet-100 text-violet-600 text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
                       {cls._count?.students ?? 0} élève{(cls._count?.students ?? 0) !== 1 ? "s" : ""}
                     </span>
                   </td>

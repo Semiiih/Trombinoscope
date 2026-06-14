@@ -51,7 +51,31 @@ async function updateClass(id, data) {
 }
 
 async function deleteClass(id) {
-  await getClassById(id);
+  const cls = await prisma.class.findUnique({
+    where: { id },
+    include: { _count: { select: { students: true, exports: true } } },
+  });
+  if (!cls) {
+    const err = new Error('Class not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (cls._count.exports > 0) {
+    const err = new Error(
+      `Impossible de supprimer la classe "${cls.label}" : ${cls._count.exports} trombinoscope${cls._count.exports > 1 ? 's ont' : ' a'} déjà été généré${cls._count.exports > 1 ? 's' : ''} à partir de cette classe.`
+    );
+    err.statusCode = 409;
+    err.reason = 'HAS_EXPORTS';
+    throw err;
+  }
+  if (cls._count.students > 0) {
+    const err = new Error(
+      `Impossible de supprimer la classe "${cls.label}" : elle contient encore ${cls._count.students} élève${cls._count.students > 1 ? 's' : ''}. Désassignez-les d'abord depuis la page Élèves.`
+    );
+    err.statusCode = 409;
+    err.reason = 'HAS_STUDENTS';
+    throw err;
+  }
   return prisma.class.delete({ where: { id } });
 }
 

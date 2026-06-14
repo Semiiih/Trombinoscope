@@ -44,13 +44,13 @@ export default function ImportCsv() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6 md:p-8">
       <div className="max-w-2xl">
-        <div className="mb-10">
+        <div className="mb-6 md:mb-10">
           <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase mb-1">
             Import
           </p>
-          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">
             Import CSV
           </h1>
           <p className="text-sm text-slate-400 mt-1">

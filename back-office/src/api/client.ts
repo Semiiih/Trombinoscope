@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "sonner";
 import type { AuthUser } from "../context/AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_URL
@@ -22,6 +23,16 @@ api.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";
+    }
+    if (err.response?.status === 403) {
+      const raw = localStorage.getItem("user");
+      let role: string | undefined;
+      try { role = raw ? JSON.parse(raw)?.role : undefined; } catch { /* ignore */ }
+      const msg =
+        role === "TEACHER"
+          ? "Action réservée aux administrateurs. Veuillez contacter l'administration."
+          : "Vous n'avez pas les droits nécessaires pour effectuer cette action.";
+      toast.error(msg);
     }
     return Promise.reject(err);
   }

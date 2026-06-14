@@ -159,65 +159,68 @@ export default function Students() {
     : null;
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 p-8 overflow-hidden">
-      <div className="flex items-center justify-between mb-10 shrink-0">
+    <div className="min-h-[calc(100vh-3.5rem)] md:h-screen flex flex-col bg-slate-50 p-4 sm:p-6 md:p-8 md:overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-10 shrink-0">
         <div>
           <Breadcrumb
             parent="Gestion"
             parentPath="/classes"
             current={selectedClass?.label}
           />
-          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">
             Élèves
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             {students.length} élève{students.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <Link
             to="/import"
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
           >
             <Upload size={16} />
-            Importer CSV
+            <span className="hidden sm:inline">Importer CSV</span>
+            <span className="sm:hidden">CSV</span>
           </Link>
           <button
             onClick={openCreate}
-            className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+            className="bg-violet-600 hover:bg-violet-700 text-white px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm whitespace-nowrap"
           >
             + Nouvel élève
           </button>
         </div>
       </div>
 
-      <div className="flex gap-3 mb-6 shrink-0 items-stretch">
+      <div className="flex flex-col md:flex-row gap-3 mb-6 shrink-0 md:items-stretch">
         <SearchBar
           value={search}
           onChange={setSearch}
           placeholder="Rechercher (nom, email...)"
         />
-        <Select
-          value={filterYear}
-          onChange={(y) => { setFilterYear(y); setFilterClass(""); }}
-          placeholder="Toutes les promos"
-          options={[...new Set(classes.map((c) => c.year))].sort().reverse().map((y) => ({
-            value: y,
-            label: `Promo ${y}`,
-          }))}
-        />
-        <Select
-          value={filterClass}
-          onChange={(c) => { setFilterClass(c); setFilterYear(""); }}
-          placeholder="Toutes les classes"
-          options={classes
-            .filter((c) => !filterYear || c.year === filterYear)
-            .map((c) => ({
-              value: String(c.id),
-              label: `${c.label} — ${c.year}`,
+        <div className="grid grid-cols-2 md:flex md:flex-1 gap-3">
+          <Select
+            value={filterYear}
+            onChange={(y) => { setFilterYear(y); setFilterClass(""); }}
+            placeholder="Toutes les promos"
+            options={[...new Set(classes.map((c) => c.year))].sort().reverse().map((y) => ({
+              value: y,
+              label: `Promo ${y}`,
             }))}
-        />
-        <div className="ml-auto flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+          />
+          <Select
+            value={filterClass}
+            onChange={(c) => { setFilterClass(c); setFilterYear(""); }}
+            placeholder="Toutes les classes"
+            options={classes
+              .filter((c) => !filterYear || c.year === filterYear)
+              .map((c) => ({
+                value: String(c.id),
+                label: `${c.label} — ${c.year}`,
+              }))}
+          />
+        </div>
+        <div className="hidden md:flex md:ml-auto items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm self-start md:self-auto">
           <button
             type="button"
             onClick={() => setView("table")}
@@ -239,7 +242,7 @@ export default function Students() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex-1 overflow-y-auto min-h-0">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex-1 overflow-x-auto md:overflow-y-auto min-h-0">
         {view === "table" ? (
           <StudentsTable
             students={students}
